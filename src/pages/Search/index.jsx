@@ -20,9 +20,11 @@ function calcEfficiency(school) {
 
 export default function Search() {
   const navigate = useNavigate();
-  const [type, setType]   = useState('schoolName');
-  const [q, setQ]         = useState('');
-  const [leads, setLeads] = useState([]);
+  const [type, setType]             = useState('schoolName');
+  const [q, setQ]                   = useState('');
+  const [leads, setLeads]           = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
@@ -33,13 +35,37 @@ export default function Search() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (type !== 'schoolName' || q.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE}/api/schools/suggestions?q=${encodeURIComponent(q.trim())}`)
+        .then(r => r.json())
+        .then(d => setSuggestions(d))
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [q, type]);
+
   function handleSearch() {
     if (!q.trim()) return;
+    setSuggestions([]);
+    setShowSuggestions(false);
     navigate(`/results?type=${type}&q=${encodeURIComponent(q.trim())}&page=1`);
   }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Escape') setShowSuggestions(false);
+  }
+
+  function handleSuggestionClick(name) {
+    setQ(name);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    navigate(`/results?type=schoolName&q=${encodeURIComponent(name)}&page=1`);
   }
 
   return (
@@ -50,7 +76,7 @@ export default function Search() {
 
         <div className={styles.form}>
           <div className={styles.formInner}>
-            <select className={styles.select} value={type} onChange={e => setType(e.target.value)}>
+            <select className={styles.select} value={type} onChange={e => { setType(e.target.value); setSuggestions([]); }}>
               {SEARCH_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
@@ -61,11 +87,23 @@ export default function Search() {
               type="text"
               placeholder={`Search by ${currentLabel}...`}
               value={q}
-              onChange={e => setQ(e.target.value)}
+              onChange={e => { setQ(e.target.value); setShowSuggestions(true); }}
               onKeyDown={handleKeyDown}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              autoComplete="off"
             />
             <button className={styles.btn} onClick={handleSearch}>Search</button>
           </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className={styles.suggestions}>
+              {suggestions.map(s => (
+                <div key={s._id} className={styles.suggestionItem} onMouseDown={() => handleSuggestionClick(s.schoolName)}>
+                  {s.schoolName}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className={styles.statsCard}>
