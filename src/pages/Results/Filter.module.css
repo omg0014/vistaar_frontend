@@ -1,0 +1,64 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.groups {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.groupLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input {
+  width: 72px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  color: #111827;
+  outline: none;
+}
+.input:focus { border-color: #7c3aed; }
+
+.dash {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.clearBtn {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.clearBtn:hover { background: #fee2e2; }
