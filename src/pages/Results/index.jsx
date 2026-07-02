@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
@@ -33,19 +33,57 @@ export default function Results() {
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const scrollRestoredRef       = useRef(false);
+
+  const cacheKey  = `results_${type}_${q}`;
+  const scrollKey = `scroll_${type}_${q}`;
 
   useEffect(() => {
+    scrollRestoredRef.current = false;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { results: r, total: t } = JSON.parse(cached);
+        setResults(r);
+        setFiltered(r);
+        setTotal(t);
+        setLoading(false);
+        return;
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
     setLoading(true);
     setError('');
     fetch(`${API_BASE}/api/schools/search?type=${type}&q=${encodeURIComponent(q)}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); }
-        else { setResults(data.results || []); setFiltered(data.results || []); setTotal(data.total || 0); }
+        else {
+          const r = data.results || [];
+          const t = data.total || 0;
+          try { sessionStorage.setItem(cacheKey, JSON.stringify({ results: r, total: t })); } catch {}
+          setResults(r);
+          setFiltered(r);
+          setTotal(t);
+        }
         setLoading(false);
       })
       .catch(() => { setError('Failed to fetch results.'); setLoading(false); });
   }, [type, q]);
+
+  useEffect(() => {
+    if (!loading && results.length > 0 && !scrollRestoredRef.current) {
+      scrollRestoredRef.current = true;
+      const saved = sessionStorage.getItem(scrollKey);
+      if (saved) {
+        setTimeout(() => {
+          window.scrollTo({ top: parseInt(saved), behavior: 'instant' });
+          sessionStorage.removeItem(scrollKey);
+        }, 50);
+      }
+    }
+  }, [loading, results.length]);
 
   return (
     <div className={styles.page}>
@@ -106,6 +144,7 @@ export default function Results() {
                 <button
                   className={styles.viewBtn}
                   onClick={async () => {
+                    try { sessionStorage.setItem(scrollKey, window.scrollY); } catch {}
                     await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
                     navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`);
                   }}
