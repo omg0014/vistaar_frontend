@@ -111,19 +111,21 @@ function TeachersSection({ school }) {
       <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#374151', padding: '14px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
         Teachers
       </h2>
-      <div style={{ display: 'flex', gap: 0 }}>
-        {TEACHER_STATS.map((t, i) => (
-          <div key={t.key} style={{
-            flex: 1, padding: '20px 16px', textAlign: 'center',
-            borderRight: i < TEACHER_STATS.length - 1 ? '1px solid #f3f4f6' : 'none',
-          }}>
-            <div style={{ fontSize: '1.6rem', marginBottom: 8 }}>{t.icon}</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#111827', marginBottom: 4 }}>
-              {school[t.key] ?? '—'}
+      <div className={styles.scrollWrap}>
+        <div style={{ display: 'flex', gap: 0, minWidth: 480 }}>
+          {TEACHER_STATS.map((t, i) => (
+            <div key={t.key} style={{
+              flex: 1, padding: '20px 16px', textAlign: 'center',
+              borderRight: i < TEACHER_STATS.length - 1 ? '1px solid #f3f4f6' : 'none',
+            }}>
+              <div style={{ fontSize: '1.6rem', marginBottom: 8 }}>{t.icon}</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#111827', marginBottom: 4 }}>
+                {school[t.key] ?? '—'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{t.label}</div>
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{t.label}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -153,7 +155,7 @@ const STUDENT_GROUPS = [
 function withPct(val, total) {
   if (val == null || val === '') return '—';
   if (!total) return String(val);
-  const pct = ((val / total) * 100).toFixed(2);
+  const pct = Math.round((val / total) * 100);
   return `${val} (${pct}%)`;
 }
 
@@ -164,41 +166,43 @@ function StudentsSection({ school }) {
       <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#374151', padding: '14px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
         Students
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0 }}>
-        {STUDENT_GROUPS.map((g, i) => (
-          <div key={g.label} style={{
-            padding: '14px 16px',
-            borderRight: (i + 1) % 3 !== 0 ? '1px solid #f3f4f6' : 'none',
-            borderBottom: i < 6 ? '1px solid #f3f4f6' : 'none',
-            background: i % 2 === 0 ? '#fff' : '#fafafa',
-          }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#5b21b6', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {g.label}
+      <div className={styles.scrollWrap}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, minWidth: 480 }}>
+          {STUDENT_GROUPS.map((g, i) => (
+            <div key={g.label} style={{
+              padding: '14px 16px',
+              borderRight: (i + 1) % 3 !== 0 ? '1px solid #f3f4f6' : 'none',
+              borderBottom: i < 6 ? '1px solid #f3f4f6' : 'none',
+              background: i % 2 === 0 ? '#fff' : '#fafafa',
+            }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#5b21b6', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {g.label}
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ color: '#6b7280', paddingBottom: 4 }}>Boys</td>
+                    <td style={{ color: '#111827', fontWeight: 500, textAlign: 'right' }}>
+                      {withPct(school[g.boys], total)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: '#6b7280', paddingBottom: 4 }}>Girls</td>
+                    <td style={{ color: '#111827', fontWeight: 500, textAlign: 'right' }}>
+                      {withPct(school[g.girls], total)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: '#6b7280' }}>Total</td>
+                    <td style={{ color: '#111827', fontWeight: 700, textAlign: 'right' }}>
+                      {withPct(school[g.total], total)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-              <tbody>
-                <tr>
-                  <td style={{ color: '#6b7280', paddingBottom: 4 }}>Boys</td>
-                  <td style={{ color: '#111827', fontWeight: 500, textAlign: 'right' }}>
-                    {withPct(school[g.boys], total)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ color: '#6b7280', paddingBottom: 4 }}>Girls</td>
-                  <td style={{ color: '#111827', fontWeight: 500, textAlign: 'right' }}>
-                    {withPct(school[g.girls], total)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ color: '#6b7280' }}>Total</td>
-                  <td style={{ color: '#111827', fontWeight: 700, textAlign: 'right' }}>
-                    {withPct(school[g.total], total)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
