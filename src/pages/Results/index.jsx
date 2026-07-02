@@ -70,7 +70,7 @@ export default function Results() {
         setLoading(false);
       })
       .catch(() => { setError('Failed to fetch results.'); setLoading(false); });
-  }, [type, q]);
+  }, [type, q, cacheKey]);
 
   useEffect(() => {
     if (!loading && results.length > 0 && !scrollRestoredRef.current) {
@@ -83,7 +83,7 @@ export default function Results() {
         }, 50);
       }
     }
-  }, [loading, results.length]);
+  }, [loading, results.length, scrollKey]);
 
   return (
     <div className={styles.page}>
