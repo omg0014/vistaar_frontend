@@ -72,7 +72,15 @@ export default function Search() {
     <div className={styles.page}>
       <div className={styles.hero}>
         <h1 className={styles.title}>Vistaar</h1>
-        <p className={styles.subtitle}>Search & explore school data across East, West and North India</p>
+        <div className={styles.subtitleWrap}>
+          <p className={styles.subtitle}>
+            'विस्तार' मार्गदर्शेन, भारतं विश्वगौरवम्।<br />
+            युगपुरुषाः युगरूपाश्च, शिक्षया सन्तु दीपिताः॥
+          </p>
+          <div className={styles.subtitleTooltip}>
+            Guided by the vast vision of the Vistaar app, may Bharat rise to its destiny as a global leader by the year 2047. Through excellence in education, may our students—both young men and women—be illuminated as the architects and changemakers of this new era.
+          </div>
+        </div>
 
         <div className={styles.form}>
           <div className={styles.formInner}>
