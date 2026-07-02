@@ -57,7 +57,13 @@ export default function Results() {
           <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
           <span className={styles.queryLabel}>{q}</span>
         </span>
-        {!loading && <span className={styles.count}>{total} schools found</span>}
+        {!loading && (
+          <span className={styles.count}>
+            {filtered.length !== results.length
+              ? `${filtered.length} of ${total} schools`
+              : `${total} schools found`}
+          </span>
+        )}
       </div>
 
       {!loading && results.length > 0 && (
