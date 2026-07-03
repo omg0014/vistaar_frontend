@@ -97,7 +97,7 @@ export default function Results() {
         setLoading(false);
       })
       .catch(() => { setError('Failed to fetch results.'); setLoading(false); });
-  }, [type, q, filterParams]);
+  }, [type, q, filterParams, cacheKey, scrollKey]);
 
   // Load next page and append
   const loadMore = useCallback(() => {
@@ -122,7 +122,7 @@ export default function Results() {
         loadingRef.current = false;
       })
       .catch(() => { setLoadingMore(false); loadingRef.current = false; });
-  }, [hasMore, page, type, q, filterParams]);
+  }, [hasMore, page, type, q, filterParams, cacheKey, total]);
 
   // IntersectionObserver — triggers loadMore when sentinel div is visible
   useEffect(() => {
