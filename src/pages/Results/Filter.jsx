@@ -7,13 +7,38 @@ function calcEfficiency(school) {
   return Math.round((school.totalStudents || 0) / capacity * 100);
 }
 
+const SORT_OPTIONS = [
+  { value: '', label: 'Sort by' },
+  { value: 'teachers_asc',    label: '👩‍🏫 Teachers: Low → High' },
+  { value: 'teachers_desc',   label: '👩‍🏫 Teachers: High → Low' },
+  { value: 'students_asc',    label: '🎓 Students: Low → High' },
+  { value: 'students_desc',   label: '🎓 Students: High → Low' },
+  { value: 'efficiency_asc',  label: '⚡ Efficiency: Low → High' },
+  { value: 'efficiency_desc', label: '⚡ Efficiency: High → Low' },
+];
+
+function applySorting(arr, sortBy) {
+  if (!sortBy) return arr;
+  const sorted = [...arr];
+  switch (sortBy) {
+    case 'teachers_asc':    return sorted.sort((a, b) => (a.totalTeachers ?? 0) - (b.totalTeachers ?? 0));
+    case 'teachers_desc':   return sorted.sort((a, b) => (b.totalTeachers ?? 0) - (a.totalTeachers ?? 0));
+    case 'students_asc':    return sorted.sort((a, b) => (a.totalStudents ?? 0) - (b.totalStudents ?? 0));
+    case 'students_desc':   return sorted.sort((a, b) => (b.totalStudents ?? 0) - (a.totalStudents ?? 0));
+    case 'efficiency_asc':  return sorted.sort((a, b) => (calcEfficiency(a) ?? 0) - (calcEfficiency(b) ?? 0));
+    case 'efficiency_desc': return sorted.sort((a, b) => (calcEfficiency(b) ?? 0) - (calcEfficiency(a) ?? 0));
+    default: return sorted;
+  }
+}
+
 export default function Filter({ results, onFilter }) {
-  const [min1, setMin1] = useState(''); // teachers min
-  const [max1, setMax1] = useState(''); // teachers max
-  const [min2, setMin2] = useState(''); // students min
-  const [max2, setMax2] = useState(''); // students max
-  const [min3, setMin3] = useState(''); // efficiency min
-  const [max3, setMax3] = useState(''); // efficiency max
+  const [min1, setMin1] = useState('');
+  const [max1, setMax1] = useState('');
+  const [min2, setMin2] = useState('');
+  const [max2, setMax2] = useState('');
+  const [min3, setMin3] = useState('');
+  const [max3, setMax3] = useState('');
+  const [sortBy, setSortBy] = useState('');
 
   useEffect(() => {
     let filtered = results;
@@ -25,16 +50,17 @@ export default function Filter({ results, onFilter }) {
     if (min3 !== '') filtered = filtered.filter(s => { const e = calcEfficiency(s); return e !== null && e >= Number(min3); });
     if (max3 !== '') filtered = filtered.filter(s => { const e = calcEfficiency(s); return e !== null && e <= Number(max3); });
 
-    onFilter(filtered);
-  }, [min1, max1, min2, max2, min3, max3, results, onFilter]);
+    onFilter(applySorting(filtered, sortBy));
+  }, [min1, max1, min2, max2, min3, max3, sortBy, results, onFilter]);
 
   function handleClear() {
     setMin1(''); setMax1('');
     setMin2(''); setMax2('');
     setMin3(''); setMax3('');
+    setSortBy('');
   }
 
-  const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '');
+  const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '') || sortBy !== '';
 
   return (
     <div className={styles.wrap}>
@@ -65,10 +91,22 @@ export default function Filter({ results, onFilter }) {
             <input className={styles.input} type="number" placeholder="Max" value={max3} onChange={e => setMax3(e.target.value)} />
           </div>
         </div>
+
+        <div className={styles.group}>
+          <select
+            className={styles.sortSelect}
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isActive && (
-        <button className={styles.clearBtn} onClick={handleClear}>Clear Filters</button>
+        <button className={styles.clearBtn} onClick={handleClear}>Clear All</button>
       )}
     </div>
   );
