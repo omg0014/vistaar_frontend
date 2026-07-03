@@ -95,6 +95,7 @@ const TOP_STATS = [
   { label: 'Classrooms',     key: 'totalClassrooms', icon: '🏫' },
   { label: 'Est. Year',      key: 'establishedYear', icon: '📅' },
   { label: 'School Type',    key: 'schoolType',      icon: null },
+  { label: 'Efficiency',     key: '_efficiency',     icon: '⚡' },
 ];
 
 const TEACHER_STATS = [
@@ -347,17 +348,32 @@ export default function SchoolDetail() {
           </div>
 
           <div className={styles.statsRow}>
-            {TOP_STATS.map(s => (
-              <div key={s.key} className={styles.statCard}>
-                <span className={styles.statIcon}>
-                  {s.key === 'schoolType' ? schoolTypeDisplay(school[s.key]).emoji : s.icon}
-                </span>
-                <span className={styles.statVal}>
-                  {s.key === 'schoolType' ? schoolTypeDisplay(school[s.key]).label : (school[s.key] ?? '—')}
-                </span>
-                <span className={styles.statLabel}>{s.label}</span>
-              </div>
-            ))}
+            {TOP_STATS.map(s => {
+              let icon = s.icon;
+              let val;
+              if (s.key === 'schoolType') {
+                const d = schoolTypeDisplay(school[s.key]);
+                icon = d.emoji;
+                val  = d.label;
+              } else if (s.key === '_efficiency') {
+                const cap = (school.totalClassrooms || 0) * 35;
+                if (cap === 0) { val = '—'; }
+                else {
+                  const eff = Math.round((school.totalStudents || 0) / cap * 100);
+                  const color = eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
+                  val = <span style={{ color }}>{eff}%</span>;
+                }
+              } else {
+                val = school[s.key] ?? '—';
+              }
+              return (
+                <div key={s.key} className={styles.statCard}>
+                  <span className={styles.statIcon}>{icon}</span>
+                  <span className={styles.statVal}>{val}</span>
+                  <span className={styles.statLabel}>{s.label}</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className={styles.sectionsGrid}>
