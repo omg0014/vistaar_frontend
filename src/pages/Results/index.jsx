@@ -146,7 +146,8 @@ export default function Results() {
                   onClick={async () => {
                     try { sessionStorage.setItem(scrollKey, window.scrollY); } catch {}
                     await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
-                    navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`);
+                    const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
+                    navigate(`/school/${school._id}${colPart}`);
                   }}
                 >
                   View Report Card →

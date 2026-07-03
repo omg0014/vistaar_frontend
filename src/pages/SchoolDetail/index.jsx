@@ -310,10 +310,17 @@ export default function SchoolDetail() {
       .then(r => r.json())
       .then(d => {
         if (d.error) setError(d.error);
-        else setSchool(d);
+        else {
+          setSchool(d);
+          document.title = `${d.schoolName} — Vistaar`;
+          const slug = d.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const colParam = col ? `?col=${encodeURIComponent(col)}` : '';
+          window.history.replaceState(null, '', `/school/${id}/${slug}${colParam}`);
+        }
         setLoading(false);
       })
       .catch(() => { setError('Failed to load school details.'); setLoading(false); });
+    return () => { document.title = 'Vistaar — School Data Explorer'; };
   }, [id, col]);
 
   return (
