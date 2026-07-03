@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
 import Filter from './Filter';
 import styles from './Results.module.css';
 
-// Efficiency = (totalStudents) / (totalClassrooms * 35) * 100
+const LIMIT = 10;
+
 function calcEfficiency(school) {
   const capacity = (school.totalClassrooms || 0) * 35;
   if (capacity === 0) return null;
@@ -22,100 +23,149 @@ function EfficiencyBadge({ value }) {
   );
 }
 
+function buildUrl(base, type, q, page, filterParams) {
+  let url = `${base}/api/schools/search?type=${type}&q=${encodeURIComponent(q)}&page=${page}&limit=${LIMIT}`;
+  Object.entries(filterParams).forEach(([k, v]) => { url += `&${k}=${v}`; });
+  return url;
+}
+
 export default function Results() {
-  const [params]              = useSearchParams();
-  const navigate              = useNavigate();
-  const type                  = params.get('type') || 'schoolName';
-  const q                     = params.get('q') || '';
+  const [params]   = useSearchParams();
+  const navigate   = useNavigate();
+  const type       = params.get('type') || 'schoolName';
+  const q          = params.get('q') || '';
 
-  const [results, setResults]   = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [total, setTotal]       = useState(0);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-  const scrollRestoredRef       = useRef(false);
+  const [results,     setResults]     = useState([]);
+  const [total,       setTotal]       = useState(0);
+  const [page,        setPage]        = useState(1);
+  const [hasMore,     setHasMore]     = useState(false);
+  const [loading,     setLoading]     = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error,       setError]       = useState('');
+  const [filterParams, setFilterParams] = useState({});
 
-  const cacheKey  = `results_${type}_${q}`;
-  const scrollKey = `scroll_${type}_${q}`;
+  const sentinelRef    = useRef(null);
+  const loadingRef     = useRef(false);
+  const restoredRef    = useRef(false);
+  const cacheKey       = `rc_${type}_${q}`;
+  const scrollKey      = `rs_${type}_${q}`;
 
+  // Initial fetch / re-fetch when search or filter changes
   useEffect(() => {
-    scrollRestoredRef.current = false;
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const { results: r, total: t } = JSON.parse(cached);
-        setResults(r);
-        setFiltered(r);
-        setTotal(t);
-        setLoading(false);
-        return;
-      } catch {
-        sessionStorage.removeItem(cacheKey);
+    // On first mount with no filter, try to restore from cache (user pressed Back)
+    if (!restoredRef.current && Object.keys(filterParams).length === 0) {
+      restoredRef.current = true;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { results: r, total: t, page: p, hasMore: h } = JSON.parse(cached);
+          setResults(r);
+          setTotal(t);
+          setPage(p);
+          setHasMore(h);
+          setLoading(false);
+          const saved = sessionStorage.getItem(scrollKey);
+          if (saved) {
+            setTimeout(() => {
+              window.scrollTo({ top: parseInt(saved), behavior: 'instant' });
+              sessionStorage.removeItem(scrollKey);
+            }, 50);
+          }
+          return;
+        } catch {
+          sessionStorage.removeItem(cacheKey);
+        }
       }
     }
+
     setLoading(true);
     setError('');
-    fetch(`${API_BASE}/api/schools/search?type=${type}&q=${encodeURIComponent(q)}`)
+    setResults([]);
+    setPage(1);
+    setHasMore(false);
+
+    fetch(buildUrl(API_BASE, type, q, 1, filterParams))
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); }
         else {
-          const r = data.results || [];
-          const t = data.total || 0;
-          try { sessionStorage.setItem(cacheKey, JSON.stringify({ results: r, total: t })); } catch {}
-          setResults(r);
-          setFiltered(r);
-          setTotal(t);
+          setResults(data.results || []);
+          setTotal(data.total || 0);
+          setHasMore(data.hasMore || false);
+          setPage(1);
         }
         setLoading(false);
       })
       .catch(() => { setError('Failed to fetch results.'); setLoading(false); });
-  }, [type, q, cacheKey]);
+  }, [type, q, filterParams, cacheKey, scrollKey]);
 
+  // Load next page and append
+  const loadMore = useCallback(() => {
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
+    const nextPage = page + 1;
+    setLoadingMore(true);
+
+    fetch(buildUrl(API_BASE, type, q, nextPage, filterParams))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) {
+          setResults(prev => {
+            const updated = [...prev, ...(data.results || [])];
+            try { sessionStorage.setItem(cacheKey, JSON.stringify({ results: updated, total, page: nextPage, hasMore: data.hasMore || false })); } catch {}
+            return updated;
+          });
+          setPage(nextPage);
+          setHasMore(data.hasMore || false);
+        }
+        setLoadingMore(false);
+        loadingRef.current = false;
+      })
+      .catch(() => { setLoadingMore(false); loadingRef.current = false; });
+  }, [hasMore, page, type, q, filterParams, cacheKey, total]);
+
+  // IntersectionObserver — triggers loadMore when sentinel div is visible
   useEffect(() => {
-    if (!loading && results.length > 0 && !scrollRestoredRef.current) {
-      scrollRestoredRef.current = true;
-      const saved = sessionStorage.getItem(scrollKey);
-      if (saved) {
-        setTimeout(() => {
-          window.scrollTo({ top: parseInt(saved), behavior: 'instant' });
-          sessionStorage.removeItem(scrollKey);
-        }, 50);
-      }
-    }
-  }, [loading, results.length, scrollKey]);
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMore(); },
+      { threshold: 0.1 }
+    );
+    const el = sentinelRef.current;
+    if (el) observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  function handleApplyFilter(fp) {
+    setFilterParams(fp);
+  }
 
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
-        <button className={styles.backBtn} onClick={() => navigate('/')}>
-          ← Back
-        </button>
+        <button className={styles.backBtn} onClick={() => navigate('/')}>← Back</button>
         <span className={styles.breadcrumb}>
           <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
           <span className={styles.queryLabel}>{q}</span>
         </span>
         {!loading && (
           <span className={styles.count}>
-            {filtered.length !== results.length
-              ? `${filtered.length} of ${total} schools`
+            {results.length < total
+              ? `Showing ${results.length} of ${total} schools`
               : `${total} schools found`}
           </span>
         )}
       </div>
 
-      {!loading && results.length > 0 && (
-        <Filter results={results} onFilter={setFiltered} />
-      )}
+      <Filter onApply={handleApplyFilter} />
 
       <div className={styles.list}>
-        {loading && <p className={styles.msg}>Loading...</p>}
-        {error  && <p className={styles.msg}>{error}</p>}
+        {loading  && <p className={styles.msg}>Loading...</p>}
+        {error    && <p className={styles.msg}>{error}</p>}
         {!loading && !error && results.length === 0 && (
           <p className={styles.msg}>No schools found.</p>
         )}
 
-        {filtered.map(school => {
+        {results.map(school => {
           const eff = calcEfficiency(school);
           return (
             <div key={school._id} className={styles.card}>
@@ -144,7 +194,10 @@ export default function Results() {
                 <button
                   className={styles.viewBtn}
                   onClick={async () => {
-                    try { sessionStorage.setItem(scrollKey, window.scrollY); } catch {}
+                    try {
+                      sessionStorage.setItem(scrollKey, window.scrollY);
+                      sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore }));
+                    } catch {}
                     await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
                     const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
                     navigate(`/school/${school._id}${colPart}`);
@@ -156,6 +209,9 @@ export default function Results() {
             </div>
           );
         })}
+
+        {loadingMore && <p className={styles.msg}>Loading more...</p>}
+        {!loading && hasMore && <div ref={sentinelRef} style={{ height: 20 }} />}
       </div>
     </div>
   );

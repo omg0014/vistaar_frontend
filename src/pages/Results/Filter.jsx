@@ -1,37 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './Filter.module.css';
 
-function calcEfficiency(school) {
-  const capacity = (school.totalClassrooms || 0) * 35;
-  if (capacity === 0) return null;
-  return Math.round((school.totalStudents || 0) / capacity * 100);
-}
-
 const SORT_OPTIONS = [
-  { value: '', label: 'Sort by' },
-  { value: 'teachers_asc',    label: '👩‍🏫 Teachers: Low → High' },
-  { value: 'teachers_desc',   label: '👩‍🏫 Teachers: High → Low' },
-  { value: 'students_asc',    label: '🎓 Students: Low → High' },
-  { value: 'students_desc',   label: '🎓 Students: High → Low' },
-  { value: 'efficiency_asc',  label: '⚡ Efficiency: Low → High' },
-  { value: 'efficiency_desc', label: '⚡ Efficiency: High → Low' },
+  { value: '',                  label: 'Sort by' },
+  { value: 'teachers_asc',     label: '👩‍🏫 Teachers: Low → High' },
+  { value: 'teachers_desc',    label: '👩‍🏫 Teachers: High → Low' },
+  { value: 'students_asc',     label: '🎓 Students: Low → High' },
+  { value: 'students_desc',    label: '🎓 Students: High → Low' },
+  { value: 'efficiency_asc',   label: '⚡ Efficiency: Low → High' },
+  { value: 'efficiency_desc',  label: '⚡ Efficiency: High → Low' },
 ];
 
-function applySorting(arr, sortBy) {
-  if (!sortBy) return arr;
-  const sorted = [...arr];
-  switch (sortBy) {
-    case 'teachers_asc':    return sorted.sort((a, b) => (a.totalTeachers ?? 0) - (b.totalTeachers ?? 0));
-    case 'teachers_desc':   return sorted.sort((a, b) => (b.totalTeachers ?? 0) - (a.totalTeachers ?? 0));
-    case 'students_asc':    return sorted.sort((a, b) => (a.totalStudents ?? 0) - (b.totalStudents ?? 0));
-    case 'students_desc':   return sorted.sort((a, b) => (b.totalStudents ?? 0) - (a.totalStudents ?? 0));
-    case 'efficiency_asc':  return sorted.sort((a, b) => (calcEfficiency(a) ?? 0) - (calcEfficiency(b) ?? 0));
-    case 'efficiency_desc': return sorted.sort((a, b) => (calcEfficiency(b) ?? 0) - (calcEfficiency(a) ?? 0));
-    default: return sorted;
-  }
-}
-
-export default function Filter({ results, onFilter }) {
+export default function Filter({ onApply }) {
   const [min1, setMin1] = useState('');
   const [max1, setMax1] = useState('');
   const [min2, setMin2] = useState('');
@@ -40,24 +20,28 @@ export default function Filter({ results, onFilter }) {
   const [max3, setMax3] = useState('');
   const [sortBy, setSortBy] = useState('');
 
-  useEffect(() => {
-    let filtered = results;
-
-    if (min1 !== '') filtered = filtered.filter(s => (s.totalTeachers ?? 0) >= Number(min1));
-    if (max1 !== '') filtered = filtered.filter(s => (s.totalTeachers ?? 0) <= Number(max1));
-    if (min2 !== '') filtered = filtered.filter(s => (s.totalStudents ?? 0) >= Number(min2));
-    if (max2 !== '') filtered = filtered.filter(s => (s.totalStudents ?? 0) <= Number(max2));
-    if (min3 !== '') filtered = filtered.filter(s => { const e = calcEfficiency(s); return e !== null && e >= Number(min3); });
-    if (max3 !== '') filtered = filtered.filter(s => { const e = calcEfficiency(s); return e !== null && e <= Number(max3); });
-
-    onFilter(applySorting(filtered, sortBy));
-  }, [min1, max1, min2, max2, min3, max3, sortBy, results, onFilter]);
+  function handleApply() {
+    const params = {};
+    if (min1 !== '') params.min1 = min1;
+    if (max1 !== '') params.max1 = max1;
+    if (min2 !== '') params.min2 = min2;
+    if (max2 !== '') params.max2 = max2;
+    if (min3 !== '') params.min3 = min3;
+    if (max3 !== '') params.max3 = max3;
+    if (sortBy !== '') {
+      const [field, order] = sortBy.split('_');
+      params.sortBy    = field;
+      params.sortOrder = order;
+    }
+    onApply(params);
+  }
 
   function handleClear() {
     setMin1(''); setMax1('');
     setMin2(''); setMax2('');
     setMin3(''); setMax3('');
     setSortBy('');
+    onApply({});
   }
 
   const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '') || sortBy !== '';
@@ -93,11 +77,7 @@ export default function Filter({ results, onFilter }) {
         </div>
 
         <div className={styles.group}>
-          <select
-            className={styles.sortSelect}
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
+          <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
             {SORT_OPTIONS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
@@ -105,9 +85,10 @@ export default function Filter({ results, onFilter }) {
         </div>
       </div>
 
-      {isActive && (
-        <button className={styles.clearBtn} onClick={handleClear}>Clear All</button>
-      )}
+      <div className={styles.actions}>
+        <button className={styles.applyBtn} onClick={handleApply}>Apply</button>
+        {isActive && <button className={styles.clearBtn} onClick={handleClear}>Clear</button>}
+      </div>
     </div>
   );
 }
