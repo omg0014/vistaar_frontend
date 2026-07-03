@@ -50,6 +50,20 @@
   color: #9ca3af;
 }
 
+.sortSelect {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+.sortSelect:focus { border-color: #7c3aed; }
+
 .clearBtn {
   background: #fef2f2;
   border: 1px solid #fca5a5;
