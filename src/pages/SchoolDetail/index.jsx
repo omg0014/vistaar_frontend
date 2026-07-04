@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import styles from './SchoolDetail.module.css';
 
@@ -299,6 +299,8 @@ export default function SchoolDetail() {
   const { id }                  = useParams();
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
+  const location                = useLocation();
+  const fromResults             = location.state?.fromResults || false;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -326,7 +328,9 @@ export default function SchoolDetail() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>← Back to Results</button>
+        <button className={styles.backBtn} onClick={() => fromResults ? navigate(-1) : navigate('/')}>
+          {fromResults ? '← Back to Results' : '← Back to Search'}
+        </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
       </div>
 
