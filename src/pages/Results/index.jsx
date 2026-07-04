@@ -34,6 +34,17 @@ export default function Results() {
   const navigate   = useNavigate();
   const type       = params.get('type') || 'schoolName';
   const q          = params.get('q') || '';
+  const cacheKey   = `rc_${type}_${q}`;
+  const scrollKey  = `rs_${type}_${q}`;
+
+  // Init filterParams from cache so filter inputs restore on Back
+  const [filterParams, setFilterParams] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`rc_${params.get('type') || 'schoolName'}_${params.get('q') || ''}`);
+      if (cached) return JSON.parse(cached).filterParams || {};
+    } catch {}
+    return {};
+  });
 
   const [results,     setResults]     = useState([]);
   const [total,       setTotal]       = useState(0);
@@ -42,18 +53,15 @@ export default function Results() {
   const [loading,     setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error,       setError]       = useState('');
-  const [filterParams, setFilterParams] = useState({});
 
   const sentinelRef    = useRef(null);
   const loadingRef     = useRef(false);
   const restoredRef    = useRef(false);
-  const cacheKey       = `rc_${type}_${q}`;
-  const scrollKey      = `rs_${type}_${q}`;
 
   // Initial fetch / re-fetch when search or filter changes
   useEffect(() => {
-    // On first mount with no filter, try to restore from cache (user pressed Back)
-    if (!restoredRef.current && Object.keys(filterParams).length === 0) {
+    // On first mount, try to restore from cache (user pressed Back)
+    if (!restoredRef.current) {
       restoredRef.current = true;
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
@@ -156,7 +164,7 @@ export default function Results() {
         )}
       </div>
 
-      <Filter onApply={handleApplyFilter} />
+      <Filter onApply={handleApplyFilter} initialValues={filterParams} />
 
       <div className={styles.list}>
         {loading  && <p className={styles.msg}>Loading...</p>}
@@ -196,7 +204,7 @@ export default function Results() {
                   onClick={async () => {
                     try {
                       sessionStorage.setItem(scrollKey, window.scrollY);
-                      sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore }));
+                      sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore, filterParams }));
                     } catch {}
                     await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
                     const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';

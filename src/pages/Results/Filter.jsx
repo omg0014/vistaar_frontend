@@ -11,14 +11,15 @@ const SORT_OPTIONS = [
   { value: 'efficiency_desc',  label: '⚡ Efficiency: High → Low' },
 ];
 
-export default function Filter({ onApply }) {
-  const [min1, setMin1] = useState('');
-  const [max1, setMax1] = useState('');
-  const [min2, setMin2] = useState('');
-  const [max2, setMax2] = useState('');
-  const [min3, setMin3] = useState('');
-  const [max3, setMax3] = useState('');
-  const [sortBy, setSortBy] = useState('');
+export default function Filter({ onApply, initialValues = {} }) {
+  const [min1, setMin1] = useState(initialValues.min1 || '');
+  const [max1, setMax1] = useState(initialValues.max1 || '');
+  const [min2, setMin2] = useState(initialValues.min2 || '');
+  const [max2, setMax2] = useState(initialValues.max2 || '');
+  const [min3, setMin3] = useState(initialValues.min3 || '');
+  const [max3, setMax3] = useState(initialValues.max3 || '');
+  const initSort = initialValues.sortBy && initialValues.sortOrder ? `${initialValues.sortBy}_${initialValues.sortOrder}` : '';
+  const [sortBy, setSortBy] = useState(initSort);
 
   function handleApply() {
     const params = {};
