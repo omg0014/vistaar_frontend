@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { SEARCH_TYPES } from '../../constants/searchTypes';
 import { API_BASE } from '../../constants/api';
 import styles from './Search.module.css';
+import bmIcon from '../../assets/bookmark.png';
 
 const REGIONS = [
   { name: 'The Western Corridor',       short: 'TWC', desc: 'Maharashtra · Gujarat · Rajasthan', color: '#d97706' },
@@ -102,6 +103,7 @@ export default function Search() {
               autoComplete="off"
             />
             <button className={styles.btn} onClick={handleSearch}>Search</button>
+            <button className={styles.btn} style={{ background: '#ede9fe', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/bookmarks')}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmarks</button>
           </div>
           {showSuggestions && suggestions.length > 0 && (
             <div className={styles.suggestions}>

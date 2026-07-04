@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import styles from './SchoolDetail.module.css';
+import bmIcon from '../../assets/bookmark.png';
 
 const SECTIONS = [
   {
@@ -305,6 +306,9 @@ export default function SchoolDetail() {
   const [school, setSchool]     = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [showBm, setShowBm]     = useState(false);
+  const [bmCols, setBmCols]     = useState([]);
+  const [newColName, setNewColName] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -325,6 +329,32 @@ export default function SchoolDetail() {
     return () => { document.title = 'Vistaar — School Data Explorer'; };
   }, [id, col]);
 
+  function openBm() {
+    fetch(`${API_BASE}/api/schools/bookmarks`)
+      .then(r => r.json())
+      .then(setBmCols)
+      .catch(() => {});
+    setShowBm(true);
+  }
+
+  async function toggleBm(col) {
+    const inCol = col.schools.some(s => s._id === school._id);
+    if (inCol) {
+      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
+    } else {
+      const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
+      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
+    }
+    fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+  }
+
+  async function createBmCol() {
+    if (!newColName.trim()) return;
+    const col = await fetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newColName.trim() }) }).then(r => r.json());
+    setNewColName('');
+    setBmCols(prev => [...prev, col]);
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -332,6 +362,35 @@ export default function SchoolDetail() {
           {fromResults ? '← Back to Results' : '← Back to Search'}
         </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
+        {school && (
+          <div style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
+            <button className={styles.backBtn} onClick={openBm} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmark</button>
+            {showBm && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBm(false)} />
+                <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
+                  {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
+                  {bmCols.map(col => {
+                    const inCol = col.schools.some(s => s._id === school._id);
+                    return (
+                      <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
+                        <button onClick={() => toggleBm(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
+                          {inCol ? 'Remove' : '+ Add'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={newColName} onChange={e => setNewColName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
+                    <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {loading && <p className={styles.msg}>Loading...</p>}

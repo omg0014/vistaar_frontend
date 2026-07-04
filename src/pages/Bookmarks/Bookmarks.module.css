@@ -1,0 +1,123 @@
+.page { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.backBtn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+.backBtn:hover { background: #e5e7eb; }
+
+.title { font-size: 1.2rem; font-weight: 700; color: #111827; }
+.count { margin-left: auto; font-size: 0.82rem; color: #6b7280; }
+
+.newCol {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.newInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  outline: none;
+}
+.newInput:focus { border-color: #7c3aed; }
+
+.createBtn {
+  padding: 10px 18px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.createBtn:hover { background: #6d28d9; }
+
+.colGrid { display: flex; flex-direction: column; gap: 10px; }
+
+.colCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.colCard:hover { border-color: #7c3aed; }
+
+.colName { font-size: 0.95rem; font-weight: 600; color: #111827; margin-bottom: 4px; }
+.colCount { font-size: 0.8rem; color: #6b7280; }
+
+.deleteBtn {
+  padding: 6px 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.deleteBtn:hover { background: #fecaca; }
+
+/* School cards in detail view */
+.list { display: flex; flex-direction: column; gap: 14px; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.schoolName { font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.location { font-size: 0.82rem; color: #6b7280; margin-bottom: 10px; }
+.cardMeta { display: flex; gap: 14px; font-size: 0.82rem; color: #374151; margin-bottom: 12px; }
+
+.cardBottom { display: flex; justify-content: space-between; align-items: center; }
+
+.removeBtn {
+  padding: 7px 14px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.removeBtn:hover { background: #fecaca; }
+
+.viewBtn {
+  padding: 8px 16px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.viewBtn:hover { background: #6d28d9; }
+
+.msg { color: #9ca3af; font-size: 0.9rem; text-align: center; padding: 40px 0; }
