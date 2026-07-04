@@ -208,7 +208,7 @@ export default function Results() {
                     } catch {}
                     await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
                     const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
-                    navigate(`/school/${school._id}${colPart}`);
+                    navigate(`/school/${school._id}${colPart}`, { state: { fromResults: true } });
                   }}
                 >
                   View Report Card →
