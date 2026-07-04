@@ -4,6 +4,7 @@ import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
 import Filter from './Filter';
 import styles from './Results.module.css';
+import bmIcon from '../../assets/bookmark.png';
 
 const LIMIT = 10;
 
@@ -53,6 +54,9 @@ export default function Results() {
   const [loading,     setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error,       setError]       = useState('');
+  const [bmOpen,      setBmOpen]      = useState(null);
+  const [bmCols,      setBmCols]      = useState([]);
+  const [bmNewCol,    setBmNewCol]    = useState('');
 
   const sentinelRef    = useRef(null);
   const loadingRef     = useRef(false);
@@ -147,6 +151,31 @@ export default function Results() {
     setFilterParams(fp);
   }
 
+  function openBm(schoolId) {
+    if (bmCols.length === 0) {
+      fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+    }
+    setBmOpen(prev => prev === schoolId ? null : schoolId);
+  }
+
+  async function toggleBm(col, school) {
+    const inCol = col.schools.some(s => s._id === school._id);
+    if (inCol) {
+      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
+    } else {
+      const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
+      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
+    }
+    fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+  }
+
+  async function createBmCol() {
+    if (!bmNewCol.trim()) return;
+    const col = await fetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: bmNewCol.trim() }) }).then(r => r.json());
+    setBmNewCol('');
+    setBmCols(prev => [...prev, col]);
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
@@ -179,7 +208,36 @@ export default function Results() {
             <div key={school._id} className={styles.card}>
               <div className={styles.cardTop}>
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                {school._source && <span className={styles.region}>{school._source}</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {school._source && <span className={styles.region}>{school._source}</span>}
+                  <div style={{ position: 'relative' }}>
+                    <button title="Bookmark" onClick={() => openBm(school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: bmOpen === school._id ? 1 : 0.55 }}><img src={bmIcon} alt="bookmark" style={{ width: 18, height: 18, display: 'block' }} /></button>
+                    {bmOpen === school._id && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setBmOpen(null)} />
+                        <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                          <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
+                          {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
+                          {bmCols.map(col => {
+                            const inCol = col.schools.some(s => s._id === school._id);
+                            return (
+                              <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
+                                <button onClick={() => toggleBm(col, school)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
+                                  {inCol ? 'Remove' : '+ Add'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                            <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={bmNewCol} onChange={e => setBmNewCol(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
+                            <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <p className={styles.address}>{school.address}</p>
