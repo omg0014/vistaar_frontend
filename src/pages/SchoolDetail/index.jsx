@@ -21,7 +21,7 @@ const SECTIONS = [
     fields: [
       ['Address',       '_address'],
       ['Rural / Urban', 'ruralUrban'],
-      ['Google Maps',   '_mapsLink'],
+      ['Lat & Long',   '_mapsLink'],
     ],
   },
   {
