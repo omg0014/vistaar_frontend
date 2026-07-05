@@ -93,11 +93,10 @@ const SECTIONS = [
 ];
 
 const TOP_STATS = [
-  { label: 'Total Students', key: 'totalStudents',   icon: '🎓' },
+  { label: 'Total Students', key: 'totalStudents',   icon: null },
   { label: 'Classrooms',     key: 'totalClassrooms', icon: '🏫' },
   { label: 'Est. Year',      key: 'establishedYear', icon: '📅' },
-  { label: 'School Type',    key: 'schoolType',      icon: null },
-  { label: 'Efficiency',     key: '_efficiency',     icon: '⚡' },
+  { label: 'Classes',        key: '_classes',        icon: '📚' },
 ];
 
 const TEACHER_STATS = [
@@ -425,18 +424,17 @@ export default function SchoolDetail() {
             {TOP_STATS.map(s => {
               let icon = s.icon;
               let val;
-              if (s.key === 'schoolType') {
-                const d = schoolTypeDisplay(school[s.key]);
-                icon = d.emoji;
-                val  = d.label;
-              } else if (s.key === '_efficiency') {
+              if (s.key === 'totalStudents') {
+                icon = schoolTypeDisplay(school.schoolType).emoji;
+                val  = school.totalStudents ?? '—';
+              } else if (s.key === 'totalClassrooms') {
                 const cap = (school.totalClassrooms || 0) * 35;
-                if (cap === 0) { val = '—'; }
-                else {
-                  const eff = Math.round((school.totalStudents || 0) / cap * 100);
-                  const color = eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
-                  val = <span style={{ color }}>{eff}%</span>;
-                }
+                const eff = cap > 0 ? Math.round((school.totalStudents || 0) / cap * 100) : null;
+                val = <>{school.totalClassrooms ?? '—'}{eff !== null && <span style={{ fontSize: '0.85em' }}> ({eff}%)</span>}</>;
+              } else if (s.key === '_classes') {
+                const lo = school.lowestClass;
+                const hi = school.highestClass;
+                val = (lo != null && hi != null) ? `${lo}–${hi}` : '—';
               } else {
                 val = school[s.key] ?? '—';
               }
