@@ -21,7 +21,8 @@ const SECTIONS = [
     fields: [
       ['Address',       '_address'],
       ['Rural / Urban', 'ruralUrban'],
-      ['Lat & Long',   '_mapsLink'],
+      ['Lat & Long',      '_mapsLink'],
+      ['Google Map Link', 'googleMapLoc'],
     ],
   },
   {
@@ -306,9 +307,11 @@ export default function SchoolDetail() {
   const [school, setSchool]     = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
-  const [showBm, setShowBm]     = useState(false);
-  const [bmCols, setBmCols]     = useState([]);
+  const [showBm, setShowBm]         = useState(false);
+  const [bmCols, setBmCols]         = useState([]);
   const [newColName, setNewColName] = useState('');
+  const [editLoc, setEditLoc]       = useState(false);
+  const [locVal, setLocVal]         = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -318,6 +321,7 @@ export default function SchoolDetail() {
         if (d.error) setError(d.error);
         else {
           setSchool(d);
+          setLocVal(d.googleMapLoc || '');
           document.title = `${d.schoolName} — Vistaar`;
           const slug = d.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           const colParam = col ? `?col=${encodeURIComponent(col)}` : '';
@@ -456,7 +460,24 @@ export default function SchoolDetail() {
                     {sec.fields.map(([label, key]) => (
                       <tr key={key} className={styles.row}>
                         <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}><Val v={school[key]} fieldKey={key} school={school} /></td>
+                        <td className={styles.tdVal}>
+                          {key === 'googleMapLoc' ? (
+                            editLoc ? (
+                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
+                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
+                              </span>
+                            ) : (
+                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                              </span>
+                            )
+                          ) : (
+                            <Val v={school[key]} fieldKey={key} school={school} />
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -480,7 +501,24 @@ export default function SchoolDetail() {
                     {sec.fields.map(([label, key]) => (
                       <tr key={key} className={styles.row}>
                         <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}><Val v={school[key]} fieldKey={key} school={school} /></td>
+                        <td className={styles.tdVal}>
+                          {key === 'googleMapLoc' ? (
+                            editLoc ? (
+                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
+                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
+                              </span>
+                            ) : (
+                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                              </span>
+                            )
+                          ) : (
+                            <Val v={school[key]} fieldKey={key} school={school} />
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -500,7 +538,24 @@ export default function SchoolDetail() {
                     {sec.fields.map(([label, key]) => (
                       <tr key={key} className={styles.row}>
                         <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}><Val v={school[key]} fieldKey={key} school={school} /></td>
+                        <td className={styles.tdVal}>
+                          {key === 'googleMapLoc' ? (
+                            editLoc ? (
+                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
+                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
+                              </span>
+                            ) : (
+                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                              </span>
+                            )
+                          ) : (
+                            <Val v={school[key]} fieldKey={key} school={school} />
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
