@@ -163,7 +163,7 @@ export default function Search() {
                       setLeads(prev => prev.filter(s => s._id !== school._id));
                     }}
                   >✕</button>
-                  <div onClick={() => navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`)}>
+                  <div onClick={() => { fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
                     <p className={styles.leadName}>{school.schoolName}</p>
                     <p className={styles.leadLocation}>
                       {[school.district, school.state].filter(Boolean).join(', ')}
