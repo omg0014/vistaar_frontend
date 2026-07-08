@@ -468,8 +468,8 @@ export default function SchoolDetail() {
                               </span>
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
                               </span>
                             )
                           ) : (
@@ -509,8 +509,8 @@ export default function SchoolDetail() {
                               </span>
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
                               </span>
                             )
                           ) : (
@@ -546,8 +546,8 @@ export default function SchoolDetail() {
                               </span>
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span>{locVal || <span className={styles.empty}>—</span>}</span>
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0 }}>✏️ Edit</button>
+                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
+                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
                               </span>
                             )
                           ) : (
