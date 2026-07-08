@@ -193,7 +193,7 @@ export default function Results() {
         )}
       </div>
 
-      <Filter onApply={handleApplyFilter} initialValues={filterParams} />
+      <Filter onApply={handleApplyFilter} initialValues={filterParams} type={type} />
 
       <div className={styles.list}>
         {loading  && <p className={styles.msg}>Loading...</p>}

@@ -1,6 +1,30 @@
 import { useState } from 'react';
 import styles from './Filter.module.css';
 
+const TEXT_FILTERS = {
+  schoolName: [
+    { key: 'fCity',     label: 'City',     placeholder: 'e.g. Mumbai' },
+    { key: 'fDistrict', label: 'District', placeholder: 'e.g. Pune' },
+    { key: 'fState',    label: 'State',    placeholder: 'e.g. Maharashtra' },
+    { key: 'fPin',      label: 'Pincode',  placeholder: 'e.g. 400001' },
+  ],
+  address: [
+    { key: 'fCity',  label: 'City',    placeholder: 'e.g. Mumbai' },
+    { key: 'fState', label: 'State',   placeholder: 'e.g. Maharashtra' },
+    { key: 'fPin',   label: 'Pincode', placeholder: 'e.g. 400001' },
+  ],
+  cityState: [
+    { key: 'fPin',  label: 'Pincode',     placeholder: 'e.g. 400001' },
+    { key: 'fArea', label: 'Area',        placeholder: 'e.g. Andheri' },
+    { key: 'fName', label: 'School Name', placeholder: 'e.g. DAV' },
+  ],
+  pincode: [
+    { key: 'fName',     label: 'School Name', placeholder: 'e.g. DAV' },
+    { key: 'fCity',     label: 'City',        placeholder: 'e.g. Mumbai' },
+    { key: 'fDistrict', label: 'District',    placeholder: 'e.g. Pune' },
+  ],
+};
+
 const SORT_OPTIONS = [
   { value: '',                  label: 'Sort by' },
   { value: 'teachers_asc',     label: '👩‍🏫 Teachers: Low → High' },
@@ -11,7 +35,7 @@ const SORT_OPTIONS = [
   { value: 'efficiency_desc',  label: '⚡ Efficiency: High → Low' },
 ];
 
-export default function Filter({ onApply, initialValues = {} }) {
+export default function Filter({ onApply, initialValues = {}, type = 'schoolName' }) {
   const [min1, setMin1] = useState(initialValues.min1 || '');
   const [max1, setMax1] = useState(initialValues.max1 || '');
   const [min2, setMin2] = useState(initialValues.min2 || '');
@@ -20,6 +44,13 @@ export default function Filter({ onApply, initialValues = {} }) {
   const [max3, setMax3] = useState(initialValues.max3 || '');
   const initSort = initialValues.sortBy && initialValues.sortOrder ? `${initialValues.sortBy}_${initialValues.sortOrder}` : '';
   const [sortBy, setSortBy] = useState(initSort);
+  const [textFilters, setTextFilters] = useState({
+    fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '',
+    fState: initialValues.fState || '', fPin: initialValues.fPin || '',
+    fArea: initialValues.fArea || '', fName: initialValues.fName || '',
+  });
+  const initAdvanced = Object.values({ fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '', fState: initialValues.fState || '', fPin: initialValues.fPin || '', fArea: initialValues.fArea || '', fName: initialValues.fName || '' }).some(v => v !== '');
+  const [showAdvanced, setShowAdvanced] = useState(initAdvanced);
 
   function handleApply() {
     const params = {};
@@ -34,6 +65,7 @@ export default function Filter({ onApply, initialValues = {} }) {
       params.sortBy    = field;
       params.sortOrder = order;
     }
+    Object.entries(textFilters).forEach(([k, v]) => { if (v.trim()) params[k] = v.trim(); });
     onApply(params);
   }
 
@@ -42,49 +74,108 @@ export default function Filter({ onApply, initialValues = {} }) {
     setMin2(''); setMax2('');
     setMin3(''); setMax3('');
     setSortBy('');
+    setTextFilters({ fCity: '', fDistrict: '', fState: '', fPin: '', fArea: '', fName: '' });
     onApply({});
   }
 
-  const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '') || sortBy !== '';
+  const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '') || sortBy !== '' || Object.values(textFilters).some(v => v !== '');
+
+  const adv = TEXT_FILTERS[type] || [];
+
+  function advInput(i) {
+    const f = adv[i];
+    if (!showAdvanced || !f) return null;
+    return (
+      <div className={`${styles.group} ${styles.advInCol}`}>
+        <span className={styles.groupLabel}>{f.label}</span>
+        <input
+          className={styles.textInput}
+          type="text"
+          placeholder={f.placeholder}
+          value={textFilters[f.key]}
+          onChange={e => setTextFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrap}>
       <div className={styles.groups}>
-        <div className={styles.group}>
-          <span className={styles.groupLabel}>👩‍🏫 Teachers</span>
-          <div className={styles.inputs}>
-            <input className={styles.input} type="number" placeholder="Min" value={min1} onChange={e => setMin1(e.target.value)} />
-            <span className={styles.dash}>—</span>
-            <input className={styles.input} type="number" placeholder="Max" value={max1} onChange={e => setMax1(e.target.value)} />
+
+        <div className={styles.col}>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>👩‍🏫 Teachers</span>
+            <div className={styles.inputs}>
+              <input className={styles.input} type="number" placeholder="Min" value={min1} onChange={e => setMin1(e.target.value)} />
+              <span className={styles.dash}>—</span>
+              <input className={styles.input} type="number" placeholder="Max" value={max1} onChange={e => setMax1(e.target.value)} />
+            </div>
+          </div>
+          {advInput(0)}
+        </div>
+
+        <div className={styles.col}>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>🎓 Students</span>
+            <div className={styles.inputs}>
+              <input className={styles.input} type="number" placeholder="Min" value={min2} onChange={e => setMin2(e.target.value)} />
+              <span className={styles.dash}>—</span>
+              <input className={styles.input} type="number" placeholder="Max" value={max2} onChange={e => setMax2(e.target.value)} />
+            </div>
+          </div>
+          {advInput(1)}
+        </div>
+
+        <div className={styles.col}>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>⚡ Efficiency %</span>
+            <div className={styles.inputs}>
+              <input className={styles.input} type="number" placeholder="Min" value={min3} onChange={e => setMin3(e.target.value)} />
+              <span className={styles.dash}>—</span>
+              <input className={styles.input} type="number" placeholder="Max" value={max3} onChange={e => setMax3(e.target.value)} />
+            </div>
+          </div>
+          {advInput(2)}
+        </div>
+
+        <div className={styles.col}>
+          <div className={styles.group}>
+            <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          {advInput(3)}
+        </div>
+
+        <div className={styles.col}>
+          <div className={styles.group}>
+            <button className={styles.advBtn} onClick={() => setShowAdvanced(p => !p)}>
+              {showAdvanced ? 'Hide ▲' : 'Advanced ▼'}
+            </button>
           </div>
         </div>
 
-        <div className={styles.group}>
-          <span className={styles.groupLabel}>🎓 Students</span>
-          <div className={styles.inputs}>
-            <input className={styles.input} type="number" placeholder="Min" value={min2} onChange={e => setMin2(e.target.value)} />
-            <span className={styles.dash}>—</span>
-            <input className={styles.input} type="number" placeholder="Max" value={max2} onChange={e => setMax2(e.target.value)} />
-          </div>
-        </div>
-
-        <div className={styles.group}>
-          <span className={styles.groupLabel}>⚡ Efficiency %</span>
-          <div className={styles.inputs}>
-            <input className={styles.input} type="number" placeholder="Min" value={min3} onChange={e => setMin3(e.target.value)} />
-            <span className={styles.dash}>—</span>
-            <input className={styles.input} type="number" placeholder="Max" value={max3} onChange={e => setMax3(e.target.value)} />
-          </div>
-        </div>
-
-        <div className={styles.group}>
-          <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            {SORT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
       </div>
+
+      {showAdvanced && adv.length > 0 && (
+        <div className={styles.mobileAdvRow}>
+          {adv.map(f => (
+            <div key={f.key} className={styles.group}>
+              <span className={styles.groupLabel}>{f.label}</span>
+              <input
+                className={styles.textInput}
+                type="text"
+                placeholder={f.placeholder}
+                value={textFilters[f.key]}
+                onChange={e => setTextFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className={styles.actions}>
         <button className={styles.applyBtn} onClick={handleApply}>Apply</button>
