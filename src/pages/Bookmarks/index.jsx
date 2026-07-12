@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import styles from './Bookmarks.module.css';
 
@@ -7,18 +7,26 @@ const MENU_STYLE = { position: 'absolute', top: '110%', right: 0, background: '#
 const MENU_ITEM  = { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', color: '#dc2626' };
 
 export default function Bookmarks() {
-  const navigate = useNavigate();
-  const [cols, setCols]       = useState([]);
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const restoreId   = location.state?.restoreCollection;
+  const [cols, setCols]         = useState([]);
   const [selected, setSelected] = useState(null);
-  const [newName, setNewName] = useState('');
+  const [newName, setNewName]   = useState('');
   const [menuOpen, setMenuOpen] = useState(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/schools/bookmarks`)
       .then(r => r.json())
-      .then(setCols)
+      .then(data => {
+        setCols(data);
+        if (restoreId) {
+          const col = data.find(c => c._id === restoreId);
+          if (col) setSelected(col);
+        }
+      })
       .catch(() => {});
-  }, []);
+  }, [restoreId]);
 
   async function createCol() {
     if (!newName.trim()) return;
@@ -81,7 +89,7 @@ export default function Bookmarks() {
                 {school.totalTeachers != null && <span>👩‍🏫 {school.totalTeachers} teachers</span>}
               </div>
               <div className={styles.cardBottom}>
-                <button className={styles.viewBtn} onClick={() => navigate(`/school/${school._id}`)}>View Report Card →</button>
+                <button className={styles.viewBtn} onClick={() => navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } })}>View Report Card →</button>
               </div>
             </div>
           ))}
