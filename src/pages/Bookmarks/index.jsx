@@ -7,8 +7,9 @@ const MENU_STYLE = { position: 'absolute', top: '110%', right: 0, background: '#
 const MENU_ITEM  = { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', color: '#dc2626' };
 
 export default function Bookmarks() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const restoreId   = location.state?.restoreCollection;
   const [cols, setCols]         = useState([]);
   const [selected, setSelected] = useState(null);
   const [newName, setNewName]   = useState('');
@@ -19,14 +20,13 @@ export default function Bookmarks() {
       .then(r => r.json())
       .then(data => {
         setCols(data);
-        const restoreId = location.state?.restoreCollection;
         if (restoreId) {
           const col = data.find(c => c._id === restoreId);
           if (col) setSelected(col);
         }
       })
       .catch(() => {});
-  }, []);
+  }, [restoreId]);
 
   async function createCol() {
     if (!newName.trim()) return;
