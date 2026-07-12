@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import styles from './Bookmarks.module.css';
 
@@ -8,15 +8,23 @@ const MENU_ITEM  = { display: 'block', width: '100%', padding: '10px 16px', back
 
 export default function Bookmarks() {
   const navigate = useNavigate();
-  const [cols, setCols]       = useState([]);
+  const location = useLocation();
+  const [cols, setCols]         = useState([]);
   const [selected, setSelected] = useState(null);
-  const [newName, setNewName] = useState('');
+  const [newName, setNewName]   = useState('');
   const [menuOpen, setMenuOpen] = useState(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/schools/bookmarks`)
       .then(r => r.json())
-      .then(setCols)
+      .then(data => {
+        setCols(data);
+        const restoreId = location.state?.restoreCollection;
+        if (restoreId) {
+          const col = data.find(c => c._id === restoreId);
+          if (col) setSelected(col);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -81,7 +89,7 @@ export default function Bookmarks() {
                 {school.totalTeachers != null && <span>👩‍🏫 {school.totalTeachers} teachers</span>}
               </div>
               <div className={styles.cardBottom}>
-                <button className={styles.viewBtn} onClick={() => navigate(`/school/${school._id}`)}>View Report Card →</button>
+                <button className={styles.viewBtn} onClick={() => navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } })}>View Report Card →</button>
               </div>
             </div>
           ))}

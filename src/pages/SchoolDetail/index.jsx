@@ -302,6 +302,8 @@ export default function SchoolDetail() {
   const navigate                = useNavigate();
   const location                = useLocation();
   const fromResults             = location.state?.fromResults || false;
+  const fromBookmarks           = location.state?.fromBookmarks || false;
+  const collectionId            = location.state?.collectionId || null;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -361,8 +363,12 @@ export default function SchoolDetail() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => fromResults ? navigate(-1) : navigate('/')}>
-          {fromResults ? '← Back to Results' : '← Back to Search'}
+        <button className={styles.backBtn} onClick={() => {
+          if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
+          else if (fromResults) navigate(-1);
+          else navigate('/');
+        }}>
+          {fromBookmarks ? '← Back to Bookmarks' : fromResults ? '← Back to Results' : '← Back to Search'}
         </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
         {school && (
