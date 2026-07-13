@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SEARCH_TYPES } from '../../constants/searchTypes';
 import { API_BASE } from '../../constants/api';
+import useAuthFetch from '../../hooks/useAuthFetch';
+import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
 import bmIcon from '../../assets/bookmark.png';
 
@@ -20,7 +22,9 @@ function calcEfficiency(school) {
 }
 
 export default function Search() {
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
+  const apiFetch   = useAuthFetch();
+  const { user, logout } = useAuth();
   const [type, setType]             = useState('schoolName');
   const [q, setQ]                   = useState('');
   const [leads, setLeads]           = useState([]);
@@ -30,11 +34,11 @@ export default function Search() {
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/schools/leads`)
+    apiFetch(`${API_BASE}/api/schools/leads`)
       .then(r => r.json())
       .then(d => setLeads(d.leads || []))
       .catch(() => {});
-  }, []);
+  }, [apiFetch]);
 
   useEffect(() => {
     if (type !== 'schoolName' || q.trim().length < 2) {
@@ -42,13 +46,13 @@ export default function Search() {
       return;
     }
     const timer = setTimeout(() => {
-      fetch(`${API_BASE}/api/schools/suggestions?q=${encodeURIComponent(q.trim())}`)
+      apiFetch(`${API_BASE}/api/schools/suggestions?q=${encodeURIComponent(q.trim())}`)
         .then(r => r.json())
         .then(d => setSuggestions(d))
         .catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
-  }, [q, type]);
+  }, [q, type, apiFetch]);
 
   function handleSearch() {
     if (!q.trim()) return;
@@ -71,6 +75,13 @@ export default function Search() {
 
   return (
     <div className={styles.page}>
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 10, zIndex: 10 }}>
+        {user?.picture && <img src={user.picture} alt={user.name} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)' }} />}
+        <span style={{ color: '#ede9fe', fontSize: '0.82rem' }}>{user?.name}</span>
+        <button onClick={() => { logout(); navigate('/login'); }} style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: '#fff', fontSize: '0.8rem', cursor: 'pointer' }}>
+          Logout
+        </button>
+      </div>
       <div className={styles.hero}>
         <h1 className={styles.title}>Vistaar</h1>
         <div className={styles.subtitleWrap}>
@@ -159,11 +170,11 @@ export default function Search() {
                     className={styles.leadClose}
                     onClick={async (e) => {
                       e.stopPropagation();
-                      await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'DELETE' });
+                      await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'DELETE' });
                       setLeads(prev => prev.filter(s => s._id !== school._id));
                     }}
                   >✕</button>
-                  <div onClick={() => { fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
+                  <div onClick={() => { apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
                     <p className={styles.leadName}>{school.schoolName}</p>
                     <p className={styles.leadLocation}>
                       {[school.district, school.state].filter(Boolean).join(', ')}

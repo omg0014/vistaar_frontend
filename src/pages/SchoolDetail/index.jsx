@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
+import useAuthFetch from '../../hooks/useAuthFetch';
 import styles from './SchoolDetail.module.css';
 import bmIcon from '../../assets/bookmark.png';
 
@@ -301,6 +302,7 @@ export default function SchoolDetail() {
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
   const location                = useLocation();
+  const apiFetch                = useAuthFetch();
   const fromResults             = location.state?.fromResults || false;
   const fromBookmarks           = location.state?.fromBookmarks || false;
   const collectionId            = location.state?.collectionId || null;
@@ -316,7 +318,7 @@ export default function SchoolDetail() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE}/api/schools/school/${id}?col=${encodeURIComponent(col)}`)
+    apiFetch(`${API_BASE}/api/schools/school/${id}?col=${encodeURIComponent(col)}`)
       .then(r => r.json())
       .then(d => {
         if (d.error) setError(d.error);
@@ -332,10 +334,10 @@ export default function SchoolDetail() {
       })
       .catch(() => { setError('Failed to load school details.'); setLoading(false); });
     return () => { document.title = 'Vistaar — School Data Explorer'; };
-  }, [id, col]);
+  }, [id, col, apiFetch]);
 
   function openBm() {
-    fetch(`${API_BASE}/api/schools/bookmarks`)
+    apiFetch(`${API_BASE}/api/schools/bookmarks`)
       .then(r => r.json())
       .then(setBmCols)
       .catch(() => {});
@@ -345,17 +347,17 @@ export default function SchoolDetail() {
   async function toggleBm(col) {
     const inCol = col.schools.some(s => s._id === school._id);
     if (inCol) {
-      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
     } else {
       const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
-      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
     }
-    fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+    apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
   }
 
   async function createBmCol() {
     if (!newColName.trim()) return;
-    const col = await fetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newColName.trim() }) }).then(r => r.json());
+    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newColName.trim() }) }).then(r => r.json());
     setNewColName('');
     setBmCols(prev => [...prev, col]);
   }
@@ -469,7 +471,7 @@ export default function SchoolDetail() {
                             editLoc ? (
                               <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                 <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
                                 <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
                               </span>
                             ) : (
@@ -510,7 +512,7 @@ export default function SchoolDetail() {
                             editLoc ? (
                               <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                 <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
                                 <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
                               </span>
                             ) : (
@@ -547,7 +549,7 @@ export default function SchoolDetail() {
                             editLoc ? (
                               <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                 <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await fetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
                                 <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
                               </span>
                             ) : (
