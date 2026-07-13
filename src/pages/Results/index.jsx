@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
+import useAuthFetch from '../../hooks/useAuthFetch';
 import Filter from './Filter';
 import styles from './Results.module.css';
 import bmIcon from '../../assets/bookmark.png';
@@ -33,6 +34,7 @@ function buildUrl(base, type, q, page, filterParams) {
 export default function Results() {
   const [params]   = useSearchParams();
   const navigate   = useNavigate();
+  const apiFetch   = useAuthFetch();
   const type       = params.get('type') || 'schoolName';
   const q          = params.get('q') || '';
   const cacheKey   = `rc_${type}_${q}`;
@@ -96,7 +98,7 @@ export default function Results() {
     setPage(1);
     setHasMore(false);
 
-    fetch(buildUrl(API_BASE, type, q, 1, filterParams))
+    apiFetch(buildUrl(API_BASE, type, q, 1, filterParams))
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); }
@@ -109,7 +111,7 @@ export default function Results() {
         setLoading(false);
       })
       .catch(() => { setError('Failed to fetch results.'); setLoading(false); });
-  }, [type, q, filterParams, cacheKey, scrollKey]);
+  }, [type, q, filterParams, cacheKey, scrollKey, apiFetch]);
 
   // Load next page and append
   const loadMore = useCallback(() => {
@@ -118,7 +120,7 @@ export default function Results() {
     const nextPage = page + 1;
     setLoadingMore(true);
 
-    fetch(buildUrl(API_BASE, type, q, nextPage, filterParams))
+    apiFetch(buildUrl(API_BASE, type, q, nextPage, filterParams))
       .then(r => r.json())
       .then(data => {
         if (!data.error) {
@@ -134,7 +136,7 @@ export default function Results() {
         loadingRef.current = false;
       })
       .catch(() => { setLoadingMore(false); loadingRef.current = false; });
-  }, [hasMore, page, type, q, filterParams, cacheKey, total]);
+  }, [hasMore, page, type, q, filterParams, cacheKey, total, apiFetch]);
 
   // IntersectionObserver — triggers loadMore when sentinel div is visible
   useEffect(() => {
@@ -153,7 +155,7 @@ export default function Results() {
 
   function openBm(schoolId) {
     if (bmCols.length === 0) {
-      fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+      apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
     }
     setBmOpen(prev => prev === schoolId ? null : schoolId);
   }
@@ -161,17 +163,17 @@ export default function Results() {
   async function toggleBm(col, school) {
     const inCol = col.schools.some(s => s._id === school._id);
     if (inCol) {
-      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
     } else {
       const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
-      await fetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
     }
-    fetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+    apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
   }
 
   async function createBmCol() {
     if (!bmNewCol.trim()) return;
-    const col = await fetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: bmNewCol.trim() }) }).then(r => r.json());
+    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: bmNewCol.trim() }) }).then(r => r.json());
     setBmNewCol('');
     setBmCols(prev => [...prev, col]);
   }
@@ -264,7 +266,7 @@ export default function Results() {
                       sessionStorage.setItem(scrollKey, window.scrollY);
                       sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore, filterParams }));
                     } catch {}
-                    await fetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
+                    await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
                     const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
                     navigate(`/school/${school._id}${colPart}`, { state: { fromResults: true } });
                   }}

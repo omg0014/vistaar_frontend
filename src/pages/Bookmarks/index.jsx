@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
+import useAuthFetch from '../../hooks/useAuthFetch';
 import styles from './Bookmarks.module.css';
 
 const MENU_STYLE = { position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 180, overflow: 'hidden' };
@@ -9,6 +10,7 @@ const MENU_ITEM  = { display: 'block', width: '100%', padding: '10px 16px', back
 export default function Bookmarks() {
   const navigate    = useNavigate();
   const location    = useLocation();
+  const apiFetch    = useAuthFetch();
   const restoreId   = location.state?.restoreCollection;
   const [cols, setCols]         = useState([]);
   const [selected, setSelected] = useState(null);
@@ -16,7 +18,7 @@ export default function Bookmarks() {
   const [menuOpen, setMenuOpen] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/schools/bookmarks`)
+    apiFetch(`${API_BASE}/api/schools/bookmarks`)
       .then(r => r.json())
       .then(data => {
         setCols(data);
@@ -26,11 +28,11 @@ export default function Bookmarks() {
         }
       })
       .catch(() => {});
-  }, [restoreId]);
+  }, [restoreId, apiFetch]);
 
   async function createCol() {
     if (!newName.trim()) return;
-    const col = await fetch(`${API_BASE}/api/schools/bookmarks`, {
+    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim() }),
@@ -41,14 +43,14 @@ export default function Bookmarks() {
 
   async function deleteCol(id, name) {
     if (!window.confirm(`Do you really want to delete "${name}"?`)) return;
-    await fetch(`${API_BASE}/api/schools/bookmarks/${id}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/api/schools/bookmarks/${id}`, { method: 'DELETE' });
     setCols(prev => prev.filter(c => c._id !== id));
     if (selected?._id === id) setSelected(null);
   }
 
   async function removeSchool(colId, schoolId, schoolName) {
     if (!window.confirm(`Do you really want to remove "${schoolName}" from this collection?`)) return;
-    await fetch(`${API_BASE}/api/schools/bookmarks/${colId}/schools/${schoolId}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/api/schools/bookmarks/${colId}/schools/${schoolId}`, { method: 'DELETE' });
     const updated = (schools) => schools.filter(s => s._id !== schoolId);
     setCols(prev => prev.map(c => c._id === colId ? { ...c, schools: updated(c.schools) } : c));
     setSelected(prev => prev ? { ...prev, schools: updated(prev.schools) } : null);
