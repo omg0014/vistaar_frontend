@@ -63,8 +63,8 @@ export default function Results() {
   const [bmCols,      setBmCols]      = useState([]);
   const [bmNewCol,    setBmNewCol]    = useState('');
   const [saveOpen,    setSaveOpen]    = useState(false);
-  const [saveName,    setSaveName]    = useState('');
-  const [saving,      setSaving]      = useState(false);
+  const [scCols,      setScCols]      = useState([]);
+  const [scNewCol,    setScNewCol]    = useState('');
 
   const sentinelRef    = useRef(null);
   const loadingRef     = useRef(false);
@@ -159,19 +159,48 @@ export default function Results() {
     setFilterParams(fp);
   }
 
-  async function handleSaveSearch() {
-    if (!saveName.trim() || saving) return;
-    setSaving(true);
-    try {
-      await apiFetch(`${API_BASE}/api/schools/saved-searches`, {
+  function filtersKey(f) {
+    return JSON.stringify(Object.fromEntries(Object.entries(f || {}).filter(([, v]) => v !== '').sort()));
+  }
+
+  function openSaveSearch() {
+    if (scCols.length === 0) {
+      apiFetch(`${API_BASE}/api/schools/search-collections`).then(r => r.json()).then(setScCols).catch(() => {});
+    }
+    setSaveOpen(p => !p);
+    setBmOpen(null);
+  }
+
+  async function toggleScCol(col) {
+    const existing = (col.searches || []).find(s => s.type === type && s.q === q && filtersKey(s.filters) === filtersKey(filterParams));
+    if (existing) {
+      await apiFetch(`${API_BASE}/api/schools/search-collections/${col._id}/searches/${existing._id}`, { method: 'DELETE' });
+      setScCols(prev => prev.map(c => c._id === col._id ? { ...c, searches: (c.searches || []).filter(s => s._id !== existing._id) } : c));
+    } else {
+      const res = await apiFetch(`${API_BASE}/api/schools/search-collections/${col._id}/searches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: saveName.trim(), type, q, filters: filterParams }),
-      });
-      setSaveOpen(false);
-      setSaveName('');
-    } catch {}
-    setSaving(false);
+        body: JSON.stringify({ type, q, filters: filterParams }),
+      }).then(r => r.json());
+      setScCols(prev => prev.map(c => c._id === col._id ? { ...c, searches: [...(c.searches || []), res.search] } : c));
+    }
+  }
+
+  async function createScCol() {
+    if (!scNewCol.trim()) return;
+    const col = await apiFetch(`${API_BASE}/api/schools/search-collections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: scNewCol.trim() }),
+    }).then(r => r.json());
+    setScNewCol('');
+    await apiFetch(`${API_BASE}/api/schools/search-collections/${col._id}/searches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, q, filters: filterParams }),
+    });
+    setScCols(prev => [...prev, { ...col, searches: [{ type, q }] }]);
+    setSaveOpen(false);
   }
 
   function openBm(schoolId) {
@@ -215,32 +244,28 @@ export default function Results() {
           </span>
         )}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button
-            onClick={() => { setSaveOpen(p => !p); if (!saveName) setSaveName(`${TYPE_LABELS[type] || type}: ${q}`); }}
-            style={{ padding: '6px 12px', background: '#ede9fe', color: '#7c3aed', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
-          >
-            🔖 Save Search
-          </button>
+          <button title="Save Search" onClick={openSaveSearch} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: saveOpen ? 1 : 0.55 }}><img src={bmIcon} alt="save search" style={{ width: 18, height: 18, display: 'block' }} /></button>
           {saveOpen && (
             <>
               <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setSaveOpen(false)} />
-              <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 260, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#374151', margin: '0 0 10px' }}>Save this search</p>
-                <input
-                  style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-                  placeholder="Name this search..."
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
-                  autoFocus
-                />
-                <button
-                  onClick={handleSaveSearch}
-                  disabled={saving || !saveName.trim()}
-                  style={{ width: '100%', padding: '8px', background: saving || !saveName.trim() ? '#e5e7eb' : '#7c3aed', color: saving || !saveName.trim() ? '#9ca3af' : '#fff', border: 'none', borderRadius: 8, cursor: saving || !saveName.trim() ? 'default' : 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
+              <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Save to Search Collection</p>
+                {scCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No search collections yet</p>}
+                {scCols.map(col => {
+                  const inCol = (col.searches || []).some(s => s.type === type && s.q === q && filtersKey(s.filters) === filtersKey(filterParams));
+                  return (
+                    <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                      <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({(col.searches || []).length})</span></span>
+                      <button onClick={() => toggleScCol(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
+                        {inCol ? 'Remove' : '+ Add'}
+                      </button>
+                    </div>
+                  );
+                })}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={scNewCol} onChange={e => setScNewCol(e.target.value)} onKeyDown={e => e.key === 'Enter' && createScCol()} />
+                  <button onClick={createScCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
+                </div>
               </div>
             </>
           )}

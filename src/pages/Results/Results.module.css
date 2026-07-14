@@ -149,13 +149,18 @@
 .viewBtn:hover { background: #b45309; }
 
 @media (max-width: 640px) {
-  .topBar { padding: 12px 16px; gap: 8px; flex-wrap: wrap; }
-  .breadcrumb { flex: 1 1 100%; order: 2; }
-  .count { order: 3; font-size: 0.8rem; padding: 3px 10px; }
-  .backBtn { order: 1; font-size: 0.82rem; padding: 6px 10px; }
-  .list { padding: 16px 12px; gap: 12px; }
-  .card { padding: 16px; }
+  .topBar { padding: 10px 12px; gap: 6px; flex-wrap: wrap; }
+  .backBtn { order: 1; font-size: 0.8rem; padding: 6px 10px; flex-shrink: 0; }
+  .breadcrumb { order: 2; flex: 1 1 auto; min-width: 0; }
+  .queryLabel { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; }
+  .count { order: 3; font-size: 0.75rem; padding: 3px 10px; white-space: nowrap; }
+  .list { padding: 12px 10px; gap: 10px; }
+  .card { padding: 14px; gap: 6px; }
+  .cardTop { gap: 8px; }
+  .schoolName { font-size: 0.88rem; }
+  .cardMeta { gap: 8px; }
+  .metaItem { font-size: 0.78rem; padding: 3px 8px; }
   .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
   .viewBtn { width: 100%; text-align: center; padding: 10px; }
-  .schoolName { font-size: 0.9rem; }
+  .pincode { font-size: 0.78rem; }
 }

@@ -1,4 +1,4 @@
-.page { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+.page { max-width: 800px; margin: 0 auto; padding: 28px 20px; }
 
 .topBar {
   display: flex;
@@ -88,13 +88,13 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 18px 22px;
 }
 .schoolName { font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
 .location { font-size: 0.82rem; color: #6b7280; margin-bottom: 10px; }
 .cardMeta { display: flex; gap: 14px; font-size: 0.82rem; color: #374151; margin-bottom: 12px; }
 
-.cardBottom { display: flex; justify-content: space-between; align-items: center; }
+.cardBottom { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f3f4f6; }
 
 .removeBtn {
   padding: 7px 14px;
@@ -155,11 +155,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 16px 20px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  gap: 12px;
+  gap: 16px;
   transition: border-color 0.15s;
 }
 .savedCard:hover { border-color: #7c3aed; }
@@ -167,7 +167,7 @@
 .savedMeta {
   font-size: 0.78rem;
   color: #9ca3af;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .savedActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -184,3 +184,36 @@
   white-space: nowrap;
 }
 .runBtn:hover { background: #6d28d9; }
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .page { padding: 16px 12px; }
+
+  .topBar { flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .title  { font-size: 1rem; }
+  .count  { font-size: 0.75rem; }
+  .backBtn { font-size: 0.8rem; padding: 6px 12px; }
+
+  .tabs { margin-bottom: 16px; }
+  .tab  { padding: 7px 14px; font-size: 0.82rem; }
+
+  .newCol { gap: 6px; margin-bottom: 16px; }
+  .newInput { font-size: 0.85rem; padding: 8px 12px; }
+  .createBtn { font-size: 0.85rem; padding: 8px 14px; }
+
+  .colGrid { gap: 8px; }
+  .colCard { padding: 14px 16px; }
+  .colName  { font-size: 0.88rem; }
+  .colCount { font-size: 0.75rem; }
+
+  .list { gap: 10px; }
+  .card { padding: 14px 16px; }
+  .schoolName { font-size: 0.92rem; }
+  .cardMeta { gap: 10px; font-size: 0.78rem; }
+  .cardBottom { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .viewBtn { width: 100%; text-align: center; padding: 10px; }
+
+  .savedCard { padding: 12px 14px; gap: 8px; flex-wrap: wrap; }
+  .savedActions { flex-shrink: 0; }
+  .runBtn { padding: 6px 12px; font-size: 0.78rem; }
+}
