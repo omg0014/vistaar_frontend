@@ -1,6 +1,15 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
+
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true; // malformed token — treat as expired
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
@@ -10,7 +19,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const t = localStorage.getItem('vistaar_token');
     const u = localStorage.getItem('vistaar_user');
-    if (t && u) { setToken(t); setUser(JSON.parse(u)); }
+    if (t && u && !isTokenExpired(t)) {
+      setToken(t);
+      setUser(JSON.parse(u));
+    } else if (t || u) {
+      localStorage.removeItem('vistaar_token');
+      localStorage.removeItem('vistaar_user');
+    }
     setLoading(false);
   }, []);
 
@@ -21,12 +36,12 @@ export function AuthProvider({ children }) {
     setUser(user);
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem('vistaar_token');
     localStorage.removeItem('vistaar_user');
     setToken(null);
     setUser(null);
-  }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout }}>
