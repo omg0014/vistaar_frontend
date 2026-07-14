@@ -37,7 +37,7 @@ deploy_production:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   before_script:
-    - apk add --no-cache openssh-client rsync bash
+    - apk add --no-cache openssh-client rsync bash curl
     - eval "$(ssh-agent -s)"
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
