@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
+import { TYPE_LABELS } from '../../constants/searchTypes';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import styles from './Bookmarks.module.css';
 
@@ -12,10 +13,13 @@ export default function Bookmarks() {
   const location    = useLocation();
   const apiFetch    = useAuthFetch();
   const restoreId   = location.state?.restoreCollection;
-  const [cols, setCols]         = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [newName, setNewName]   = useState('');
-  const [menuOpen, setMenuOpen] = useState(null);
+  const [activeTab, setActiveTab]       = useState('collections');
+  const [cols, setCols]                 = useState([]);
+  const [selected, setSelected]         = useState(null);
+  const [newName, setNewName]           = useState('');
+  const [menuOpen, setMenuOpen]         = useState(null);
+  const [savedSearches, setSavedSearches] = useState([]);
+  const [ssMenuOpen, setSsMenuOpen]     = useState(null);
 
   useEffect(() => {
     apiFetch(`${API_BASE}/api/schools/bookmarks`)
@@ -27,6 +31,10 @@ export default function Bookmarks() {
           if (col) setSelected(col);
         }
       })
+      .catch(() => {});
+    apiFetch(`${API_BASE}/api/schools/saved-searches`)
+      .then(r => r.json())
+      .then(setSavedSearches)
       .catch(() => {});
   }, [restoreId, apiFetch]);
 
@@ -54,6 +62,18 @@ export default function Bookmarks() {
     const updated = (schools) => schools.filter(s => s._id !== schoolId);
     setCols(prev => prev.map(c => c._id === colId ? { ...c, schools: updated(c.schools) } : c));
     setSelected(prev => prev ? { ...prev, schools: updated(prev.schools) } : null);
+  }
+
+  async function deleteSavedSearch(id) {
+    if (!window.confirm('Delete this saved search?')) return;
+    await apiFetch(`${API_BASE}/api/schools/saved-searches/${id}`, { method: 'DELETE' });
+    setSavedSearches(prev => prev.filter(s => s._id !== id));
+    setSsMenuOpen(null);
+  }
+
+  function runSavedSearch(s) {
+    const qs = new URLSearchParams({ type: s.type, q: s.q, ...s.filters }).toString();
+    navigate(`/results?${qs}`);
   }
 
   function toggleMenu(e, id) {
@@ -102,43 +122,83 @@ export default function Bookmarks() {
 
   return (
     <div className={styles.page}>
-      {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
+      {(menuOpen || ssMenuOpen) && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => { setMenuOpen(null); setSsMenuOpen(null); }} />}
       <div className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => navigate('/')}>← Back</button>
         <span className={styles.title}>Bookmarks</span>
       </div>
-      <div className={styles.newCol}>
-        <input
-          className={styles.newInput}
-          placeholder="New collection name..."
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && createCol()}
-        />
-        <button className={styles.createBtn} onClick={createCol}>+ Create</button>
+
+      <div className={styles.tabs}>
+        <button className={`${styles.tab} ${activeTab === 'collections' ? styles.tabActive : ''}`} onClick={() => setActiveTab('collections')}>Collections</button>
+        <button className={`${styles.tab} ${activeTab === 'savedSearches' ? styles.tabActive : ''}`} onClick={() => setActiveTab('savedSearches')}>Saved Searches</button>
       </div>
-      <div className={styles.colGrid}>
-        {cols.length === 0 && <p className={styles.msg}>No collections yet. Create one above!</p>}
-        {cols.map(col => (
-          <div key={col._id} className={styles.colCard} onClick={() => setSelected(col)}>
-            <div>
-              <p className={styles.colName}>{col.name}</p>
-              <p className={styles.colCount}>{col.schools.length} schools</p>
-            </div>
-            <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-              <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
-              {menuOpen === col._id && (
-                <div style={MENU_STYLE}>
-                  {col.schools.length === 0
-                    ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
-                    : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
-                  }
-                </div>
-              )}
-            </div>
+
+      {activeTab === 'collections' && (
+        <>
+          <div className={styles.newCol}>
+            <input
+              className={styles.newInput}
+              placeholder="New collection name..."
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && createCol()}
+            />
+            <button className={styles.createBtn} onClick={createCol}>+ Create</button>
           </div>
-        ))}
-      </div>
+          <div className={styles.colGrid}>
+            {cols.length === 0 && <p className={styles.msg}>No collections yet. Create one above!</p>}
+            {cols.map(col => (
+              <div key={col._id} className={styles.colCard} onClick={() => setSelected(col)}>
+                <div>
+                  <p className={styles.colName}>{col.name}</p>
+                  <p className={styles.colCount}>{col.schools.length} schools</p>
+                </div>
+                <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                  {menuOpen === col._id && (
+                    <div style={MENU_STYLE}>
+                      {col.schools.length === 0
+                        ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
+                        : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
+                      }
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'savedSearches' && (
+        <div className={styles.savedList}>
+          {savedSearches.length === 0 && <p className={styles.msg}>No saved searches yet. Save a search from the Results page.</p>}
+          {savedSearches.map(s => {
+            const filterCount = Object.values(s.filters || {}).filter(v => v !== '').length;
+            return (
+              <div key={s._id} className={styles.savedCard}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', margin: 0 }}>{s.name}</p>
+                  <p className={styles.savedMeta}>
+                    {TYPE_LABELS[s.type] || s.type} · "{s.q}"{filterCount > 0 ? ` · ${filterCount} filter${filterCount > 1 ? 's' : ''}` : ''}
+                  </p>
+                </div>
+                <div className={styles.savedActions}>
+                  <button className={styles.runBtn} onClick={() => runSavedSearch(s)}>▶ Run</button>
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={e => { e.stopPropagation(); setSsMenuOpen(prev => prev === s._id ? null : s._id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                    {ssMenuOpen === s._id && (
+                      <div style={MENU_STYLE}>
+                        <button style={MENU_ITEM} onClick={() => deleteSavedSearch(s._id)}>Delete</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -121,3 +121,66 @@
 .viewBtn:hover { background: #6d28d9; }
 
 .msg { color: #9ca3af; font-size: 0.9rem; text-align: center; padding: 40px 0; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab {
+  padding: 8px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: -1px;
+}
+.tab:hover { color: #374151; }
+
+.tabActive {
+  color: #7c3aed;
+  border-bottom-color: #7c3aed;
+}
+
+/* Saved search cards */
+.savedList { display: flex; flex-direction: column; gap: 10px; }
+
+.savedCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+.savedCard:hover { border-color: #7c3aed; }
+
+.savedMeta {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.savedActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.runBtn {
+  padding: 7px 16px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.runBtn:hover { background: #6d28d9; }
