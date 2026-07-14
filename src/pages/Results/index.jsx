@@ -40,13 +40,16 @@ export default function Results() {
   const cacheKey   = `rc_${type}_${q}`;
   const scrollKey  = `rs_${type}_${q}`;
 
-  // Init filterParams from cache so filter inputs restore on Back
+  // Init filterParams from cache (Back nav) or URL params (saved search replay)
   const [filterParams, setFilterParams] = useState(() => {
     try {
       const cached = sessionStorage.getItem(`rc_${params.get('type') || 'schoolName'}_${params.get('q') || ''}`);
       if (cached) return JSON.parse(cached).filterParams || {};
     } catch {}
-    return {};
+    const urlFilters = {};
+    const excluded = new Set(['type', 'q', 'page', 'limit']);
+    params.forEach((v, k) => { if (!excluded.has(k)) urlFilters[k] = v; });
+    return urlFilters;
   });
 
   const [results,     setResults]     = useState([]);
@@ -59,6 +62,9 @@ export default function Results() {
   const [bmOpen,      setBmOpen]      = useState(null);
   const [bmCols,      setBmCols]      = useState([]);
   const [bmNewCol,    setBmNewCol]    = useState('');
+  const [saveOpen,    setSaveOpen]    = useState(false);
+  const [saveName,    setSaveName]    = useState('');
+  const [saving,      setSaving]      = useState(false);
 
   const sentinelRef    = useRef(null);
   const loadingRef     = useRef(false);
@@ -153,6 +159,21 @@ export default function Results() {
     setFilterParams(fp);
   }
 
+  async function handleSaveSearch() {
+    if (!saveName.trim() || saving) return;
+    setSaving(true);
+    try {
+      await apiFetch(`${API_BASE}/api/schools/saved-searches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: saveName.trim(), type, q, filters: filterParams }),
+      });
+      setSaveOpen(false);
+      setSaveName('');
+    } catch {}
+    setSaving(false);
+  }
+
   function openBm(schoolId) {
     if (bmCols.length === 0) {
       apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
@@ -193,6 +214,37 @@ export default function Results() {
               : `${total} schools found`}
           </span>
         )}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => { setSaveOpen(p => !p); if (!saveName) setSaveName(`${TYPE_LABELS[type] || type}: ${q}`); }}
+            style={{ padding: '6px 12px', background: '#ede9fe', color: '#7c3aed', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+          >
+            🔖 Save Search
+          </button>
+          {saveOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setSaveOpen(false)} />
+              <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 260, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#374151', margin: '0 0 10px' }}>Save this search</p>
+                <input
+                  style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+                  placeholder="Name this search..."
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveSearch}
+                  disabled={saving || !saveName.trim()}
+                  style={{ width: '100%', padding: '8px', background: saving || !saveName.trim() ? '#e5e7eb' : '#7c3aed', color: saving || !saveName.trim() ? '#9ca3af' : '#fff', border: 'none', borderRadius: 8, cursor: saving || !saveName.trim() ? 'default' : 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <Filter onApply={handleApplyFilter} initialValues={filterParams} type={type} />
