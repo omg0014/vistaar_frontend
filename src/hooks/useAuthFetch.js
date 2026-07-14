@@ -2,10 +2,13 @@ import { useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function useAuthFetch() {
-  const { token } = useAuth();
-  return useCallback((url, options = {}) =>
-    fetch(url, {
+  const { token, logout } = useAuth();
+  return useCallback(async (url, options = {}) => {
+    const res = await fetch(url, {
       ...options,
       headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    }), [token]);
+    });
+    if (res.status === 401) logout(); // session expired — PrivateRoute redirects to /login
+    return res;
+  }, [token, logout]);
 }
