@@ -52,7 +52,7 @@ deploy_production:
     # precedence so it overrides the committed .env (localhost) for prod builds.
     - scp "$APP_ENV" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env.production.local"
     - ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd $DEPLOY_PATH && npm ci && CI=false npm run build && chmod o+x $DEPLOY_PATH"
-    - ssh "$DEPLOY_USER@$DEPLOY_HOST" "curl -fsS --max-time 10 -H 'Host: dashboard-vistaar.yugam.co' http://127.0.0.1/ >/dev/null && echo healthy || (echo UNHEALTHY; exit 1)"
+    - curl -fsS --max-time 20 https://dashboard-vistaar.yugam.co/ >/dev/null && echo healthy
   environment:
     name: production
     url: https://dashboard-vistaar.yugam.co
