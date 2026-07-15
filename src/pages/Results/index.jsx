@@ -275,7 +275,24 @@ export default function Results() {
       <Filter onApply={handleApplyFilter} initialValues={filterParams} type={type} />
 
       <div className={styles.list}>
-        {loading  && <p className={styles.msg}>Loading...</p>}
+        {loading && [...Array(5)].map((_, i) => (
+          <div key={i} className={styles.card}>
+            <div className={styles.cardTop}>
+              <div className={styles.skel} style={{ height: 16, width: '65%' }} />
+              <div className={styles.skel} style={{ height: 22, width: 60, borderRadius: 6 }} />
+            </div>
+            <div className={styles.skel} style={{ height: 13, width: '50%' }} />
+            <div className={styles.skel} style={{ height: 13, width: '40%' }} />
+            <div className={styles.cardMeta}>
+              <div className={styles.skel} style={{ height: 26, width: 110, borderRadius: 6 }} />
+              <div className={styles.skel} style={{ height: 26, width: 100, borderRadius: 6 }} />
+            </div>
+            <div className={styles.cardBottom}>
+              <div className={styles.skel} style={{ height: 13, width: 80 }} />
+              <div className={styles.skel} style={{ height: 34, width: 140, borderRadius: 8 }} />
+            </div>
+          </div>
+        ))}
         {error    && <p className={styles.msg}>{error}</p>}
         {!loading && !error && results.length === 0 && (
           <p className={styles.msg}>No schools found.</p>

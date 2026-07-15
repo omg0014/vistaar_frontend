@@ -404,7 +404,36 @@ export default function SchoolDetail() {
         )}
       </div>
 
-      {loading && <p className={styles.msg}>Loading...</p>}
+      {loading && (
+        <div className={styles.content}>
+          <div className={`${styles.skel} ${styles.skelHero}`} />
+          <div className={styles.statsRow}>
+            {[1,2,3,4].map(i => (
+              <div key={i} className={styles.statCard}>
+                <div className={styles.skel} style={{ height: 28, width: 32, marginBottom: 8 }} />
+                <div className={styles.skel} style={{ height: 20, width: 60, marginBottom: 6 }} />
+                <div className={styles.skel} style={{ height: 12, width: 70 }} />
+              </div>
+            ))}
+          </div>
+          <div className={styles.skel} style={{ height: 180, borderRadius: 12 }} />
+          <div className={styles.sectionsGrid}>
+            {[1,2].map(i => (
+              <div key={i} className={styles.section}>
+                <div className={styles.skel} style={{ height: 44, borderRadius: 0 }} />
+                <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[1,2,3,4].map(j => (
+                    <div key={j} style={{ display: 'flex', gap: 16 }}>
+                      <div className={styles.skel} style={{ height: 13, width: '45%' }} />
+                      <div className={styles.skel} style={{ height: 13, flex: 1 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {error   && <p className={styles.msg}>⚠️ {error}</p>}
 
       {school && !loading && (
