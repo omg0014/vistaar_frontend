@@ -32,6 +32,7 @@ export default function Bookmarks() {
   const apiFetch  = useAuthFetch();
   const restoreId = location.state?.restoreCollection;
 
+  const [loading,      setLoading]      = useState(true);
   const [activeTab,    setActiveTab]    = useState('collections');
 
   // School bookmark collections
@@ -48,6 +49,9 @@ export default function Bookmarks() {
   const [scSrchMenu,   setScSrchMenu]   = useState(null);
 
   useEffect(() => {
+    let done = 0;
+    function checkDone() { if (++done === 2) setLoading(false); }
+
     apiFetch(`${API_BASE}/api/schools/bookmarks`)
       .then(r => r.json())
       .then(data => {
@@ -56,12 +60,14 @@ export default function Bookmarks() {
           const col = data.find(c => c._id === restoreId);
           if (col) setSelected(col);
         }
+        checkDone();
       })
-      .catch(() => {});
+      .catch(() => checkDone());
+
     apiFetch(`${API_BASE}/api/schools/search-collections`)
       .then(r => r.json())
-      .then(setScCols)
-      .catch(() => {});
+      .then(d => { setScCols(d); checkDone(); })
+      .catch(() => checkDone());
   }, [restoreId, apiFetch]);
 
   // ── School collection actions ──────────────────────────────
@@ -234,26 +240,37 @@ export default function Bookmarks() {
             <button className={styles.createBtn} onClick={createCol}>+ Create</button>
           </div>
           <div className={styles.colGrid}>
-            {cols.length === 0 && <p className={styles.msg}>No collections yet. Create one above!</p>}
-            {cols.map(col => (
-              <div key={col._id} className={styles.colCard} onClick={() => setSelected(col)}>
-                <div>
-                  <p className={styles.colName}>{col.name}</p>
-                  <p className={styles.colCount}>{col.schools.length} schools</p>
-                </div>
-                <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
-                  {menuOpen === col._id && (
-                    <div style={MENU_STYLE}>
-                      {col.schools.length === 0
-                        ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
-                        : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
-                      }
+            {loading
+              ? [...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.colCard} style={{ cursor: 'default' }}>
+                    <div>
+                      <div className={styles.skel} style={{ height: 14, width: '55%', marginBottom: 8 }} />
+                      <div className={styles.skel} style={{ height: 11, width: '30%' }} />
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ))
+              : cols.length === 0
+                ? <p className={styles.msg}>No collections yet. Create one above!</p>
+                : cols.map(col => (
+                    <div key={col._id} className={styles.colCard} onClick={() => setSelected(col)}>
+                      <div>
+                        <p className={styles.colName}>{col.name}</p>
+                        <p className={styles.colCount}>{col.schools.length} schools</p>
+                      </div>
+                      <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                        {menuOpen === col._id && (
+                          <div style={MENU_STYLE}>
+                            {col.schools.length === 0
+                              ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
+                              : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+            }
           </div>
         </>
       )}
@@ -265,26 +282,37 @@ export default function Bookmarks() {
             <button className={styles.createBtn} onClick={createScCol}>+ Create</button>
           </div>
           <div className={styles.colGrid}>
-            {scCols.length === 0 && <p className={styles.msg}>No search collections yet. Create one above!</p>}
-            {scCols.map(col => (
-              <div key={col._id} className={styles.colCard} onClick={() => setScSelected(col)}>
-                <div>
-                  <p className={styles.colName}>{col.name}</p>
-                  <p className={styles.colCount}>{(col.searches || []).length} searches</p>
-                </div>
-                <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={e => toggleScMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
-                  {scMenuOpen === col._id && (
-                    <div style={MENU_STYLE}>
-                      {(col.searches || []).length === 0
-                        ? <button style={MENU_ITEM} onClick={() => { setScMenuOpen(null); deleteScCol(col._id, col.name); }}>Delete collection</button>
-                        : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all searches first</span>
-                      }
+            {loading
+              ? [...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.colCard} style={{ cursor: 'default' }}>
+                    <div>
+                      <div className={styles.skel} style={{ height: 14, width: '55%', marginBottom: 8 }} />
+                      <div className={styles.skel} style={{ height: 11, width: '30%' }} />
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ))
+              : scCols.length === 0
+                ? <p className={styles.msg}>No search collections yet. Create one above!</p>
+                : scCols.map(col => (
+                    <div key={col._id} className={styles.colCard} onClick={() => setScSelected(col)}>
+                      <div>
+                        <p className={styles.colName}>{col.name}</p>
+                        <p className={styles.colCount}>{(col.searches || []).length} searches</p>
+                      </div>
+                      <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <button onClick={e => toggleScMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                        {scMenuOpen === col._id && (
+                          <div style={MENU_STYLE}>
+                            {(col.searches || []).length === 0
+                              ? <button style={MENU_ITEM} onClick={() => { setScMenuOpen(null); deleteScCol(col._id, col.name); }}>Delete collection</button>
+                              : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all searches first</span>
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+            }
           </div>
         </>
       )}

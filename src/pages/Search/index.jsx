@@ -28,6 +28,7 @@ export default function Search() {
   const [type, setType]             = useState('schoolName');
   const [q, setQ]                   = useState('');
   const [leads, setLeads]           = useState([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -36,8 +37,8 @@ export default function Search() {
   useEffect(() => {
     apiFetch(`${API_BASE}/api/schools/leads`)
       .then(r => r.json())
-      .then(d => setLeads(d.leads || []))
-      .catch(() => {});
+      .then(d => { setLeads(d.leads || []); setLeadsLoading(false); })
+      .catch(() => setLeadsLoading(false));
   }, [apiFetch]);
 
   useEffect(() => {
@@ -157,38 +158,47 @@ export default function Search() {
         ))}
       </div>
 
-      {leads.length > 0 && (
+      {(leadsLoading || leads.length > 0) && (
         <div className={styles.leadsSection}>
           <h2 className={styles.leadsTitle}>Recent Leads</h2>
           <div className={styles.leadsGrid}>
-            {leads.map(school => {
-              const eff = calcEfficiency(school);
-              const effColor = eff === null ? null : eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
-              return (
-                <div key={school._id} className={styles.leadCard}>
-                  <button
-                    className={styles.leadClose}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'DELETE' });
-                      setLeads(prev => prev.filter(s => s._id !== school._id));
-                    }}
-                  >✕</button>
-                  <div onClick={() => { apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
-                    <p className={styles.leadName}>{school.schoolName}</p>
-                    <p className={styles.leadLocation}>
-                      {[school.district, school.state].filter(Boolean).join(', ')}
-                    </p>
-                    <div className={styles.leadMeta}>
-                      {school.totalStudents != null && <span>🎓 {school.totalStudents}</span>}
-                      {eff !== null && (
-                        <span style={{ color: effColor, fontWeight: 600 }}>{eff}%</span>
-                      )}
-                    </div>
+            {leadsLoading
+              ? [...Array(5)].map((_, i) => (
+                  <div key={i} className={styles.leadCard}>
+                    <div className={styles.skel} style={{ height: 12, width: '80%', marginBottom: 8 }} />
+                    <div className={styles.skel} style={{ height: 10, width: '60%', marginBottom: 12 }} />
+                    <div className={styles.skel} style={{ height: 10, width: '40%' }} />
                   </div>
-                </div>
-              );
-            })}
+                ))
+              : leads.map(school => {
+                  const eff = calcEfficiency(school);
+                  const effColor = eff === null ? null : eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
+                  return (
+                    <div key={school._id} className={styles.leadCard}>
+                      <button
+                        className={styles.leadClose}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'DELETE' });
+                          setLeads(prev => prev.filter(s => s._id !== school._id));
+                        }}
+                      >✕</button>
+                      <div onClick={() => { apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
+                        <p className={styles.leadName}>{school.schoolName}</p>
+                        <p className={styles.leadLocation}>
+                          {[school.district, school.state].filter(Boolean).join(', ')}
+                        </p>
+                        <div className={styles.leadMeta}>
+                          {school.totalStudents != null && <span>🎓 {school.totalStudents}</span>}
+                          {eff !== null && (
+                            <span style={{ color: effColor, fontWeight: 600 }}>{eff}%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+            }
           </div>
         </div>
       )}
