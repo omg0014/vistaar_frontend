@@ -318,7 +318,7 @@ export default function SchoolDetail() {
 
   useEffect(() => {
     setLoading(true);
-    apiFetch(`${API_BASE}/api/schools/school/${id}?col=${encodeURIComponent(col)}`)
+    apiFetch(`${API_BASE}/api/schools/school/${id}`, { method: 'POST' })
       .then(r => r.json())
       .then(d => {
         if (d.error) setError(d.error);
@@ -337,7 +337,7 @@ export default function SchoolDetail() {
   }, [id, col, apiFetch]);
 
   function openBm() {
-    apiFetch(`${API_BASE}/api/schools/bookmarks`)
+    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' })
       .then(r => r.json())
       .then(setBmCols)
       .catch(() => {});
@@ -352,7 +352,7 @@ export default function SchoolDetail() {
       const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
       await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
     }
-    apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
   }
 
   async function createBmCol() {

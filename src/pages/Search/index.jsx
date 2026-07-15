@@ -35,7 +35,7 @@ export default function Search() {
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
   useEffect(() => {
-    apiFetch(`${API_BASE}/api/schools/leads`)
+    apiFetch(`${API_BASE}/api/schools/leads`, { method: 'POST' })
       .then(r => r.json())
       .then(d => { setLeads(d.leads || []); setLeadsLoading(false); })
       .catch(() => setLeadsLoading(false));
@@ -47,7 +47,7 @@ export default function Search() {
       return;
     }
     const timer = setTimeout(() => {
-      apiFetch(`${API_BASE}/api/schools/suggestions?q=${encodeURIComponent(q.trim())}`)
+      apiFetch(`${API_BASE}/api/schools/suggestions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q: q.trim() }) })
         .then(r => r.json())
         .then(d => setSuggestions(d))
         .catch(() => {});

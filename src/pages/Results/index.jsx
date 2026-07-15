@@ -25,10 +25,8 @@ function EfficiencyBadge({ value }) {
   );
 }
 
-function buildUrl(base, type, q, page, filterParams) {
-  let url = `${base}/api/schools/search?type=${type}&q=${encodeURIComponent(q)}&page=${page}&limit=${LIMIT}`;
-  Object.entries(filterParams).forEach(([k, v]) => { url += `&${k}=${v}`; });
-  return url;
+function buildBody(type, q, page, filterParams) {
+  return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, q, page, limit: LIMIT, ...filterParams }) };
 }
 
 export default function Results() {
@@ -104,7 +102,7 @@ export default function Results() {
     setPage(1);
     setHasMore(false);
 
-    apiFetch(buildUrl(API_BASE, type, q, 1, filterParams))
+    apiFetch(`${API_BASE}/api/schools/search`, buildBody(type, q, 1, filterParams))
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); }
@@ -126,7 +124,7 @@ export default function Results() {
     const nextPage = page + 1;
     setLoadingMore(true);
 
-    apiFetch(buildUrl(API_BASE, type, q, nextPage, filterParams))
+    apiFetch(`${API_BASE}/api/schools/search`, buildBody(type, q, nextPage, filterParams))
       .then(r => r.json())
       .then(data => {
         if (!data.error) {
@@ -165,7 +163,7 @@ export default function Results() {
 
   function openSaveSearch() {
     if (scCols.length === 0) {
-      apiFetch(`${API_BASE}/api/schools/search-collections`).then(r => r.json()).then(setScCols).catch(() => {});
+      apiFetch(`${API_BASE}/api/schools/search-collections/list`, { method: 'POST' }).then(r => r.json()).then(setScCols).catch(() => {});
     }
     setSaveOpen(p => !p);
     setBmOpen(null);
@@ -205,7 +203,7 @@ export default function Results() {
 
   function openBm(schoolId) {
     if (bmCols.length === 0) {
-      apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+      apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
     }
     setBmOpen(prev => prev === schoolId ? null : schoolId);
   }
@@ -218,7 +216,7 @@ export default function Results() {
       const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
       await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
     }
-    apiFetch(`${API_BASE}/api/schools/bookmarks`).then(r => r.json()).then(setBmCols).catch(() => {});
+    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
   }
 
   async function createBmCol() {
