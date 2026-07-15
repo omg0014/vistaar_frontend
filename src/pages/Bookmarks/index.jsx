@@ -52,7 +52,7 @@ export default function Bookmarks() {
     let done = 0;
     function checkDone() { if (++done === 2) setLoading(false); }
 
-    apiFetch(`${API_BASE}/api/schools/bookmarks`)
+    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' })
       .then(r => r.json())
       .then(data => {
         setCols(data);
@@ -64,7 +64,7 @@ export default function Bookmarks() {
       })
       .catch(() => checkDone());
 
-    apiFetch(`${API_BASE}/api/schools/search-collections`)
+    apiFetch(`${API_BASE}/api/schools/search-collections/list`, { method: 'POST' })
       .then(r => r.json())
       .then(d => { setScCols(d); checkDone(); })
       .catch(() => checkDone());
