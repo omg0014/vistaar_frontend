@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
 import useAuthFetch from '../../hooks/useAuthFetch';
@@ -27,10 +27,12 @@ function filterTags(filters) {
 }
 
 export default function Bookmarks() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const apiFetch  = useAuthFetch();
-  const restoreId = location.state?.restoreCollection;
+  const navigate      = useNavigate();
+  const location      = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const apiFetch      = useAuthFetch();
+  // restoreId from either URL param (refresh-safe) or navigation state (back from SchoolDetail)
+  const restoreId     = searchParams.get('col') || location.state?.restoreCollection;
 
   const [loading,      setLoading]      = useState(true);
   const [activeTab,    setActiveTab]    = useState('collections');
@@ -85,7 +87,7 @@ export default function Bookmarks() {
     if (!window.confirm(`Do you really want to delete "${name}"?`)) return;
     await apiFetch(`${API_BASE}/api/schools/bookmarks/${id}`, { method: 'DELETE' });
     setCols(prev => prev.filter(c => c._id !== id));
-    if (selected?._id === id) setSelected(null);
+    if (selected?._id === id) { setSelected(null); setSearchParams({}); }
   }
 
   async function removeSchool(colId, schoolId, schoolName) {
@@ -139,7 +141,7 @@ export default function Bookmarks() {
       <div className={styles.page}>
         {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => setSelected(null)}>← Collections</button>
+          <button className={styles.backBtn} onClick={() => { setSelected(null); setSearchParams({}); }}>← Collections</button>
           <span className={styles.title}>{selected.name}</span>
           <span className={styles.count}>{selected.schools.length} schools</span>
         </div>
@@ -253,7 +255,7 @@ export default function Bookmarks() {
               : cols.length === 0
                 ? <p className={styles.msg}>No collections yet. Create one above!</p>
                 : cols.map(col => (
-                    <div key={col._id} className={styles.colCard} onClick={() => setSelected(col)}>
+                    <div key={col._id} className={styles.colCard} onClick={() => { setSelected(col); setSearchParams({ col: col._id }); }}>
                       <div>
                         <p className={styles.colName}>{col.name}</p>
                         <p className={styles.colCount}>{col.schools.length} schools</p>
