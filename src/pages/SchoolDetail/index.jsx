@@ -309,6 +309,8 @@ export default function SchoolDetail() {
   const fromBookmarks           = location.state?.fromBookmarks || false;
   const fromAdmin               = location.state?.fromAdmin || false;
   const adminBroker             = location.state?.adminBroker || null;
+  const fromBroker              = location.state?.fromBroker || false;
+  const brokerLeads             = location.state?.brokerLeads || null;
   const collectionId            = location.state?.collectionId || null;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
@@ -418,6 +420,7 @@ export default function SchoolDetail() {
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => {
           if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
+          else if (fromBroker) navigate('/broker', { state: { brokerLeads } });
           else if (fromAdmin) navigate('/admin', { state: { adminBroker } });
           else if (fromResults) {
             try { sessionStorage.setItem('vistaar_share_update', JSON.stringify({ _id: id, sharedWith: school?.sharedWith || [] })); } catch {}
@@ -425,7 +428,7 @@ export default function SchoolDetail() {
           }
           else navigate('/', { state: { updatedSchool: { _id: id, sharedWith: school?.sharedWith || [] } } });
         }}>
-          {fromBookmarks ? '← Back to Bookmarks' : fromAdmin ? '← Back to Leads' :fromResults ? '← Back to Results' : '← Back to Search'}
+          {fromBookmarks ? '← Back to Bookmarks' : fromBroker ? '← Back to Leads' : fromAdmin ? '← Back to Leads' : fromResults ? '← Back to Results' : '← Back to Search'}
         </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
         {school && (
