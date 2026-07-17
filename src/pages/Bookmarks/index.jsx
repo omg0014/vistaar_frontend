@@ -222,6 +222,9 @@ export default function Bookmarks() {
     );
   }
 
+  // While loading and a collection is expected (refresh case), show nothing to avoid flicker
+  if (loading && restoreId) return null;
+
   // ── Collections list view ──────────────────────────────────
   return (
     <div className={styles.page}>
