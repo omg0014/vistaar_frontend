@@ -122,6 +122,7 @@ export default function Bookmarks() {
   }
 
   function runSearch(s) {
+    sessionStorage.removeItem(`rc_${s.type}_${s.q}`);
     const qs = new URLSearchParams({ type: s.type, q: s.q, ...s.filters }).toString();
     navigate(`/results?${qs}`);
   }

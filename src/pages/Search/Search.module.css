@@ -304,6 +304,89 @@
 }
 .leadClose:hover { background: #dc2626; color: #fff; }
 
+.shareWrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.shareBtn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.shareBtn:hover { background: #ede9fe; color: #7c3aed; border-color: #ddd6fe; }
+
+.shareBtnActive {
+  background: #ede9fe;
+  color: #7c3aed;
+  border-color: #ddd6fe;
+}
+
+.shareDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 180px;
+  z-index: 200;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.shareEmpty {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.brokerOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  gap: 8px;
+}
+.brokerOption:hover:not(:disabled) { background: #f5f3ff; }
+.brokerOption:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.brokerOptionName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brokerOptionToggle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.brokerOptionShared .brokerOptionToggle { color: #7c3aed; }
+
 .leadName {
   font-size: 0.78rem;
   font-weight: 700;

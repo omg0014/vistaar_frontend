@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
+import { useAuth } from '../../context/AuthContext';
 import styles from './SchoolDetail.module.css';
 import bmIcon from '../../assets/bookmark.png';
 
@@ -303,8 +304,11 @@ export default function SchoolDetail() {
   const navigate                = useNavigate();
   const location                = useLocation();
   const apiFetch                = useAuthFetch();
+  const { user }                = useAuth();
   const fromResults             = location.state?.fromResults || false;
   const fromBookmarks           = location.state?.fromBookmarks || false;
+  const fromAdmin               = location.state?.fromAdmin || false;
+  const adminBroker             = location.state?.adminBroker || null;
   const collectionId            = location.state?.collectionId || null;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
@@ -315,6 +319,50 @@ export default function SchoolDetail() {
   const [newColName, setNewColName] = useState('');
   const [editLoc, setEditLoc]       = useState(false);
   const [locVal, setLocVal]         = useState('');
+
+  // Share state (admin only)
+  const [brokers,    setBrokers]    = useState([]);
+  const [shareOpen,  setShareOpen]  = useState(false);
+  const [sharing,    setSharing]    = useState(null);
+  const shareRef                    = useRef(null);
+
+  // Close share dropdown on outside click — no backdrop overlay needed
+  useEffect(() => {
+    if (!shareOpen) return;
+    function handleOutside(e) {
+      if (shareRef.current && !shareRef.current.contains(e.target)) setShareOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [shareOpen]);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => setBrokers(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [apiFetch, user?.role]);
+
+  async function toggleShare(broker) {
+    const alreadyShared = (school?.sharedWith || []).includes(broker.email);
+    setSharing(broker.email);
+    const endpoint = alreadyShared ? 'unshare' : 'share';
+    try {
+      await apiFetch(`${API_BASE}/api/schools/${id}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brokerEmail: broker.email }),
+      });
+      setSchool(prev => {
+        const sharedWith = alreadyShared
+          ? (prev.sharedWith || []).filter(e => e !== broker.email)
+          : [...(prev.sharedWith || []), broker.email];
+        return { ...prev, sharedWith };
+      });
+    } catch {}
+    setSharing(null);
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -367,39 +415,85 @@ export default function SchoolDetail() {
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => {
           if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
-          else if (fromResults) navigate(-1);
-          else navigate('/');
+          else if (fromAdmin) navigate('/admin', { state: { adminBroker } });
+          else if (fromResults) {
+            try { sessionStorage.setItem('vistaar_share_update', JSON.stringify({ _id: id, sharedWith: school?.sharedWith || [] })); } catch {}
+            navigate(-1);
+          }
+          else navigate('/', { state: { updatedSchool: { _id: id, sharedWith: school?.sharedWith || [] } } });
         }}>
-          {fromBookmarks ? '← Back to Bookmarks' : fromResults ? '← Back to Results' : '← Back to Search'}
+          {fromBookmarks ? '← Back to Bookmarks' : fromAdmin ? '← Back to Leads' :fromResults ? '← Back to Results' : '← Back to Search'}
         </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
         {school && (
-          <div style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
-            <button className={styles.backBtn} onClick={openBm} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmark</button>
-            {showBm && (
-              <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBm(false)} />
-                <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                  <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
-                  {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
-                  {bmCols.map(col => {
-                    const inCol = col.schools.some(s => s._id === school._id);
-                    return (
-                      <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
-                        <button onClick={() => toggleBm(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
-                          {inCol ? 'Remove' : '+ Add'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={newColName} onChange={e => setNewColName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
-                    <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
-                  </div>
-                </div>
-              </>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 0 }}>
+
+            {/* Share button — admin only */}
+            {user?.role === 'admin' && (
+              <div style={{ position: 'relative' }} ref={shareRef}>
+                <button
+                  className={styles.backBtn}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: (school.sharedWith?.length > 0) ? '#ede9fe' : undefined, color: (school.sharedWith?.length > 0) ? '#7c3aed' : undefined, borderColor: (school.sharedWith?.length > 0) ? '#ddd6fe' : undefined }}
+                  onClick={() => { setShareOpen(o => !o); setShowBm(false); }}
+                >
+                  🔗 {school.sharedWith?.length > 0 ? `Shared (${school.sharedWith.length})` : 'Share'}
+                </button>
+                {shareOpen && (
+                  <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 8, zIndex: 100, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                      <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', padding: '6px 8px 10px' }}>Share with broker</p>
+                      {brokers.length === 0
+                        ? <p style={{ fontSize: '0.8rem', color: '#9ca3af', padding: '0 8px 8px' }}>No brokers yet.</p>
+                        : brokers.map(broker => {
+                            const shared = (school.sharedWith || []).includes(broker.email);
+                            return (
+                              <button
+                                key={broker._id}
+                                disabled={sharing === broker.email}
+                                onClick={() => toggleShare(broker)}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: shared ? '#f5f3ff' : 'transparent', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', fontFamily: 'inherit', gap: 8, transition: 'background 0.12s', opacity: sharing === broker.email ? 0.6 : 1 }}
+                              >
+                                <span style={{ fontSize: '0.83rem', fontWeight: 600, color: '#0f172a', flex: 1, textAlign: 'left' }}>{broker.name}</span>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: shared ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>
+                                  {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
+                                </span>
+                              </button>
+                            );
+                          })
+                      }
+                    </div>
+                )}
+              </div>
             )}
+
+            {/* Bookmark button — admin only */}
+            {user?.role !== 'broker' && <div style={{ position: 'relative' }}>
+              <button className={styles.backBtn} onClick={openBm} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmark</button>
+              {showBm && (
+                <>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBm(false)} />
+                  <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
+                    {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
+                    {bmCols.map(col => {
+                      const inCol = col.schools.some(s => s._id === school._id);
+                      return (
+                        <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
+                          <button onClick={() => toggleBm(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
+                            {inCol ? 'Remove' : '+ Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={newColName} onChange={e => setNewColName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
+                      <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>}
+
           </div>
         )}
       </div>
