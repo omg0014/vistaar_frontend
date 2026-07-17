@@ -336,13 +336,16 @@ export default function SchoolDetail() {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [shareOpen]);
 
+  // Lazy-load broker list only when Share dropdown is first opened
+  const brokersLoaded = useRef(false);
   useEffect(() => {
-    if (user?.role !== 'admin') return;
+    if (!shareOpen || brokersLoaded.current || user?.role !== 'admin') return;
+    brokersLoaded.current = true;
     apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
       .then(r => r.json())
       .then(d => setBrokers(Array.isArray(d) ? d : []))
       .catch(() => {});
-  }, [apiFetch, user?.role]);
+  }, [shareOpen, apiFetch, user?.role]);
 
   async function toggleShare(broker) {
     const alreadyShared = (school?.sharedWith || []).includes(broker.email);
