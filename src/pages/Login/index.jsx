@@ -35,7 +35,7 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed.'); setLoading(false); return; }
       login(data.token, data.user);
-      navigate('/');
+      navigate(data.user.role === 'broker' ? '/broker' : '/');
     } catch {
       setError('Could not connect to server. Please try again.');
       setLoading(false);

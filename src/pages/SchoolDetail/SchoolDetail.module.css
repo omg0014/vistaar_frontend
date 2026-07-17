@@ -60,9 +60,9 @@
 @media (max-width: 640px) {
   .heroCard { flex-direction: column; gap: 10px; }
   .statsRow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .header { padding: 12px 16px; gap: 10px; }
-  .backBtn { font-size: 0.82rem; padding: 6px 10px; }
-  .headerTitle { font-size: 0.85rem; }
+  .header { padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+  .backBtn { font-size: 0.78rem; padding: 6px 10px; }
+  .headerTitle { display: none; }
 }
 
 .scrollWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }

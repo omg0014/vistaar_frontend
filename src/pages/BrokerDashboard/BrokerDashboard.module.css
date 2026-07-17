@@ -1,0 +1,238 @@
+.page { min-height: 100vh; display: flex; flex-direction: column; background: #f3f4f6; }
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #1e0a3c 0%, #4c1d95 60%, #7c3aed 100%);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.headerBrand { display: flex; align-items: baseline; gap: 10px; }
+
+.brandName {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.brandTag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255,255,255,0.12);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.headerRight { display: flex; align-items: center; gap: 10px; }
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+}
+
+.userName { font-size: 0.82rem; color: rgba(255,255,255,0.85); }
+
+.logoutBtn {
+  padding: 5px 14px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.logoutBtn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 16px 60px;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.5px;
+}
+
+.subtitle { font-size: 0.88rem; color: #6b7280; flex: 1; }
+
+.countBadge {
+  background: #5b21b6;
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Card list (same style as Results) ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.schoolName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+}
+
+.region {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.address { font-size: 0.85rem; color: #6b7280; }
+.location { font-size: 0.85rem; color: #6b7280; }
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.metaItem {
+  font-size: 0.85rem;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.badge {
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.pincode { font-size: 0.85rem; color: #6b7280; }
+
+.viewBtn {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.viewBtn:hover { background: #b45309; }
+
+/* ── Empty state ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 24px;
+  text-align: center;
+}
+.emptyIcon { font-size: 3rem; margin-bottom: 16px; }
+.emptyTitle { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.emptyDesc { font-size: 0.88rem; color: #64748b; max-width: 300px; }
+
+/* ── Footer ── */
+.footer {
+  background: linear-gradient(135deg, #1e0a3c 0%, #4c1d95 60%, #7c3aed 100%);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.footerBrand { font-size: 0.88rem; font-weight: 800; color: #fff; }
+.footerText { font-size: 0.8rem; color: rgba(255,255,255,0.6); font-style: italic; }
+
+/* ── Skeletons ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skel {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  display: block;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header { padding: 0 16px; }
+  .main { padding: 20px 12px 40px; }
+  .card { padding: 14px; gap: 6px; }
+  .cardTop { gap: 8px; }
+  .schoolName { font-size: 0.88rem; }
+  .cardMeta { gap: 8px; }
+  .metaItem { font-size: 0.78rem; padding: 3px 8px; }
+  .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .viewBtn { width: 100%; text-align: center; padding: 10px; }
+  .pageTitle { gap: 8px; }
+  .title { font-size: 1.15rem; }
+  .userName { display: none; }
+}

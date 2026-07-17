@@ -6,6 +6,8 @@ import SchoolDetail from './pages/SchoolDetail';
 import Bookmarks from './pages/Bookmarks';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
+import AdminPanel from './pages/Admin';
+import BrokerDashboard from './pages/BrokerDashboard';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -13,17 +15,38 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  // No role = old token issued before broker feature; force re-login to get new JWT
+  if (!user.role) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/broker" replace />;
+  return children;
+}
+
+function BrokerRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.role) return <Navigate to="/login" replace />;
+  if (user.role !== 'broker') return <Navigate to="/" replace />;
+  return children;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login"        element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/"            element={<PrivateRoute><Search /></PrivateRoute>} />
-        <Route path="/results"     element={<PrivateRoute><Results /></PrivateRoute>} />
+        <Route path="/"             element={<AdminRoute><Search /></AdminRoute>} />
+        <Route path="/results"      element={<AdminRoute><Results /></AdminRoute>} />
         <Route path="/school/:id"       element={<PrivateRoute><SchoolDetail /></PrivateRoute>} />
         <Route path="/school/:id/:slug" element={<PrivateRoute><SchoolDetail /></PrivateRoute>} />
-        <Route path="/bookmarks"   element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
+        <Route path="/bookmarks"    element={<AdminRoute><Bookmarks /></AdminRoute>} />
+        <Route path="/admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        <Route path="/broker"       element={<BrokerRoute><BrokerDashboard /></BrokerRoute>} />
       </Routes>
     </BrowserRouter>
   );

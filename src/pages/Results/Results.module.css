@@ -132,21 +132,100 @@
   align-items: center;
   justify-content: space-between;
   margin-top: 4px;
+  gap: 8px;
 }
 
-.pincode { font-size: 0.85rem; color: #6b7280; }
+.pincode { font-size: 0.85rem; color: #6b7280; flex-shrink: 0; }
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
 .viewBtn {
   background: #d97706;
   color: #fff;
+  border: none;
   border-radius: 8px;
   padding: 8px 18px;
   font-size: 0.88rem;
   font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
+}
+.viewBtn:hover { background: #b45309; }
+
+.shareBtn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.shareBtn:hover { background: #ede9fe; color: #7c3aed; border-color: #ddd6fe; }
+.shareBtnActive { background: #ede9fe; color: #7c3aed; border-color: #ddd6fe; }
+
+.shareDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 190px;
+  z-index: 100;
+  overflow: hidden;
+  padding: 4px;
 }
 
-.viewBtn:hover { background: #b45309; }
+.shareEmpty {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.brokerOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  gap: 8px;
+}
+.brokerOption:hover:not(:disabled) { background: #f5f3ff; }
+.brokerOption:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.brokerOptionName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brokerOptionToggle { font-size: 0.72rem; font-weight: 600; color: #94a3b8; flex-shrink: 0; }
+.brokerOptionShared .brokerOptionToggle { color: #7c3aed; }
 
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -173,6 +252,8 @@
   .cardMeta { gap: 8px; }
   .metaItem { font-size: 0.78rem; padding: 3px 8px; }
   .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .cardActions { width: 100%; flex-direction: column; }
   .viewBtn { width: 100%; text-align: center; padding: 10px; }
+  .shareBtn { width: 100%; text-align: center; }
   .pincode { font-size: 0.78rem; }
 }
