@@ -309,6 +309,8 @@ export default function SchoolDetail() {
   const fromBookmarks           = location.state?.fromBookmarks || false;
   const fromAdmin               = location.state?.fromAdmin || false;
   const adminBroker             = location.state?.adminBroker || null;
+  const fromBroker              = location.state?.fromBroker || false;
+  const brokerLeads             = location.state?.brokerLeads || null;
   const collectionId            = location.state?.collectionId || null;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
@@ -336,13 +338,16 @@ export default function SchoolDetail() {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [shareOpen]);
 
+  // Lazy-load broker list only when Share dropdown is first opened
+  const brokersLoaded = useRef(false);
   useEffect(() => {
-    if (user?.role !== 'admin') return;
+    if (!shareOpen || brokersLoaded.current || user?.role !== 'admin') return;
+    brokersLoaded.current = true;
     apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
       .then(r => r.json())
       .then(d => setBrokers(Array.isArray(d) ? d : []))
       .catch(() => {});
-  }, [apiFetch, user?.role]);
+  }, [shareOpen, apiFetch, user?.role]);
 
   async function toggleShare(broker) {
     const alreadyShared = (school?.sharedWith || []).includes(broker.email);
@@ -415,6 +420,7 @@ export default function SchoolDetail() {
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => {
           if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
+          else if (fromBroker) navigate('/broker', { state: { brokerLeads } });
           else if (fromAdmin) navigate('/admin', { state: { adminBroker } });
           else if (fromResults) {
             try { sessionStorage.setItem('vistaar_share_update', JSON.stringify({ _id: id, sharedWith: school?.sharedWith || [] })); } catch {}
@@ -422,7 +428,7 @@ export default function SchoolDetail() {
           }
           else navigate('/', { state: { updatedSchool: { _id: id, sharedWith: school?.sharedWith || [] } } });
         }}>
-          {fromBookmarks ? '← Back to Bookmarks' : fromAdmin ? '← Back to Leads' :fromResults ? '← Back to Results' : '← Back to Search'}
+          {fromBookmarks ? '← Back to Bookmarks' : fromBroker ? '← Back to Leads' : fromAdmin ? '← Back to Leads' : fromResults ? '← Back to Results' : '← Back to Search'}
         </button>
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
         {school && (

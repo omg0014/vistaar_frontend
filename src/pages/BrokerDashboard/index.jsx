@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
@@ -23,17 +23,21 @@ function EfficiencyBadge({ value }) {
 
 export default function BrokerDashboard() {
   const navigate  = useNavigate();
+  const location  = useLocation();
   const apiFetch  = useAuthFetch();
   const { user, logout } = useAuth();
-  const [leads,   setLeads]   = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const cached = location.state?.brokerLeads;
+  const [leads,   setLeads]   = useState(cached || []);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
+    if (cached) return; // already restored from navigation state, skip API call
     apiFetch(`${API_BASE}/api/broker/leads`, { method: 'POST' })
       .then(r => r.json())
       .then(d => { setLeads(d.leads || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [apiFetch]);
+  }, [apiFetch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={styles.page}>
@@ -112,7 +116,7 @@ export default function BrokerDashboard() {
                   {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
                   <button
                     className={styles.viewBtn}
-                    onClick={() => navigate(`/school/${school._id}`)}
+                    onClick={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, brokerLeads: leads } })}
                   >
                     View Report Card →
                   </button>
