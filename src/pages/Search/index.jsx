@@ -40,6 +40,18 @@ export default function Search() {
   const shareRefs                     = useRef({});
   const isFirstLeadsLoad              = useRef(true);
 
+  // Hamburger menu
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
+  const hamburgerRef                      = useRef(null);
+  useEffect(() => {
+    if (!hamburgerOpen) return;
+    function handleOutside(e) {
+      if (hamburgerRef.current && !hamburgerRef.current.contains(e.target)) setHamburgerOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [hamburgerOpen]);
+
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
   useEffect(() => {
@@ -138,17 +150,20 @@ export default function Search() {
 
   return (
     <div className={styles.page}>
-      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 10, zIndex: 10 }}>
-        {user?.picture && <img src={user.picture} alt={user.name} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)' }} />}
-        <span style={{ color: '#ede9fe', fontSize: '0.82rem' }}>{user?.name}</span>
-        {user?.role === 'admin' && (
-          <button onClick={() => navigate('/admin')} style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: '#fff', fontSize: '0.8rem', cursor: 'pointer' }}>
-            Brokers
-          </button>
-        )}
-        <button onClick={() => { logout(); navigate('/login'); }} style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: '#fff', fontSize: '0.8rem', cursor: 'pointer' }}>
-          Logout
+      <div className={styles.topRight} ref={hamburgerRef}>
+        {user?.picture && <img src={user.picture} alt={user.name} className={styles.topAvatar} />}
+        <button className={styles.hamburgerBtn} onClick={() => setHamburgerOpen(o => !o)} aria-label="Menu">
+          <span /><span /><span />
         </button>
+        {hamburgerOpen && (
+          <div className={styles.hamburgerMenu}>
+            <p className={styles.hamburgerName}>{user?.name}</p>
+            {user?.role === 'admin' && (
+              <button onClick={() => { setHamburgerOpen(false); navigate('/admin'); }} className={styles.hamburgerItem}>Brokers</button>
+            )}
+            <button onClick={() => { logout(); navigate('/login'); }} className={styles.hamburgerItem}>Logout</button>
+          </div>
+        )}
       </div>
       <div className={styles.hero}>
         <h1 className={styles.title}>Vistaar</h1>
