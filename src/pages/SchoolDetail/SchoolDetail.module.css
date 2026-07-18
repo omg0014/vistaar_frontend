@@ -60,9 +60,15 @@
 @media (max-width: 640px) {
   .heroCard { flex-direction: column; gap: 10px; }
   .statsRow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .header { padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
-  .backBtn { font-size: 0.78rem; padding: 6px 10px; }
+  .header { padding: 10px 12px; gap: 5px; flex-wrap: wrap; }
+  .backBtn { font-size: 0.72rem; padding: 5px 8px; }
   .headerTitle { display: none; }
+  .content { padding: 12px 10px; gap: 12px; }
+  .tdLabel { padding: 8px 12px; font-size: 0.8rem; width: 40%; }
+  .tdVal   { padding: 8px 12px; font-size: 0.8rem; }
+  .sectionTitle { padding: 10px 14px; font-size: 0.88rem; }
+  .statCard { min-width: unset; padding: 12px 8px; }
+  .statVal  { font-size: 1rem; }
 }
 
 .scrollWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
