@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
@@ -298,7 +298,7 @@ function Val({ v, fieldKey, school }) {
   return String(v);
 }
 
-export default function SchoolDetail() {
+export default function SchoolDetail({ publicMode = false }) {
   const { id }                  = useParams();
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
@@ -310,7 +310,6 @@ export default function SchoolDetail() {
   const fromAdmin               = location.state?.fromAdmin || false;
   const adminBroker             = location.state?.adminBroker || null;
   const fromBroker              = location.state?.fromBroker || false;
-  const brokerLeads             = location.state?.brokerLeads || null;
   const collectionId            = location.state?.collectionId || null;
   const col                     = params.get('col') || '';
   const [school, setSchool]     = useState(null);
@@ -321,57 +320,31 @@ export default function SchoolDetail() {
   const [newColName, setNewColName] = useState('');
   const [editLoc, setEditLoc]       = useState(false);
   const [locVal, setLocVal]         = useState('');
+  const canEdit                     = !publicMode && user?.role === 'admin';
 
-  // Share state (admin only)
-  const [brokers,    setBrokers]    = useState([]);
-  const [shareOpen,  setShareOpen]  = useState(false);
-  const [sharing,    setSharing]    = useState(null);
-  const shareRef                    = useRef(null);
-
-  // Close share dropdown on outside click — no backdrop overlay needed
-  useEffect(() => {
-    if (!shareOpen) return;
-    function handleOutside(e) {
-      if (shareRef.current && !shareRef.current.contains(e.target)) setShareOpen(false);
-    }
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [shareOpen]);
-
-  // Lazy-load broker list only when Share dropdown is first opened
-  const brokersLoaded = useRef(false);
-  useEffect(() => {
-    if (!shareOpen || brokersLoaded.current || user?.role !== 'admin') return;
-    brokersLoaded.current = true;
-    apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
-      .then(r => r.json())
-      .then(d => setBrokers(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [shareOpen, apiFetch, user?.role]);
-
-  async function toggleShare(broker) {
-    const alreadyShared = (school?.sharedWith || []).includes(broker.email);
-    setSharing(broker.email);
-    const endpoint = alreadyShared ? 'unshare' : 'share';
+  // Native share (admin only) — public read-only link via Web Share API
+  const [copied, setCopied] = useState(false);
+  async function handleNativeShare() {
+    if (!school) return;
+    const slug = school.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const url  = `${window.location.origin}/public/school/${id}/${slug}`;
     try {
-      await apiFetch(`${API_BASE}/api/schools/${id}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brokerEmail: broker.email }),
-      });
-      setSchool(prev => {
-        const sharedWith = alreadyShared
-          ? (prev.sharedWith || []).filter(e => e !== broker.email)
-          : [...(prev.sharedWith || []), broker.email];
-        return { ...prev, sharedWith };
-      });
+      if (navigator.share) {
+        await navigator.share({ title: school.schoolName, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch {}
-    setSharing(null);
   }
 
   useEffect(() => {
     setLoading(true);
-    apiFetch(`${API_BASE}/api/schools/school/${id}`, { method: 'POST' })
+    const request = publicMode
+      ? fetch(`${API_BASE}/api/public/school/${id}`)
+      : apiFetch(`${API_BASE}/api/schools/school/${id}`, { method: 'POST' });
+    request
       .then(r => r.json())
       .then(d => {
         if (d.error) setError(d.error);
@@ -381,13 +354,14 @@ export default function SchoolDetail() {
           document.title = `${d.schoolName} — Vistaar`;
           const slug = d.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           const colParam = col ? `?col=${encodeURIComponent(col)}` : '';
-          window.history.replaceState(null, '', `/school/${id}/${slug}${colParam}`);
+          const base = publicMode ? '/public/school' : '/school';
+          window.history.replaceState(null, '', `${base}/${id}/${slug}${colParam}`);
         }
         setLoading(false);
       })
       .catch(() => { setError('Failed to load school details.'); setLoading(false); });
     return () => { document.title = 'Vistaar — School Data Explorer'; };
-  }, [id, col, apiFetch]);
+  }, [id, col, apiFetch, publicMode]);
 
   function openBm() {
     apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' })
@@ -418,57 +392,30 @@ export default function SchoolDetail() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => {
-          if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
-          else if (fromBroker) navigate('/broker', { state: { brokerLeads } });
-          else if (fromAdmin) navigate('/admin', { state: { adminBroker } });
-          else if (fromResults) {
-            try { sessionStorage.setItem('vistaar_share_update', JSON.stringify({ _id: id, sharedWith: school?.sharedWith || [] })); } catch {}
-            navigate(-1);
-          }
-          else navigate('/', { state: { updatedSchool: { _id: id, sharedWith: school?.sharedWith || [] } } });
-        }}>
-          {fromBookmarks ? '← Back to Bookmarks' : fromBroker ? '← Back to Leads' : fromAdmin ? '← Back to Leads' : fromResults ? '← Back to Results' : '← Back to Search'}
-        </button>
+        {!publicMode && (
+          <button className={styles.backBtn} onClick={() => {
+            if (fromBookmarks) navigate('/bookmarks', { state: { restoreCollection: collectionId } });
+            else if (fromBroker) navigate('/broker', { state: { restoreCollection: collectionId } });
+            else if (fromAdmin) navigate('/admin', { state: { adminBroker } });
+            else if (fromResults) navigate(-1);
+            else navigate('/');
+          }}>
+            {fromBookmarks ? '← Back to Bookmarks' : fromBroker ? '← Back to Collections' : fromAdmin ? '← Back to Broker' : fromResults ? '← Back to Results' : '← Back to Search'}
+          </button>
+        )}
         {school && <span className={styles.headerTitle}>{school.schoolName}</span>}
-        {school && (
+        {school && !publicMode && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 0 }}>
 
-            {/* Share button — admin only */}
+            {/* Share button — admin only, shares the public read-only link */}
             {user?.role === 'admin' && (
-              <div style={{ position: 'relative' }} ref={shareRef}>
-                <button
-                  className={styles.backBtn}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: (school.sharedWith?.length > 0) ? '#ede9fe' : undefined, color: (school.sharedWith?.length > 0) ? '#7c3aed' : undefined, borderColor: (school.sharedWith?.length > 0) ? '#ddd6fe' : undefined }}
-                  onClick={() => { setShareOpen(o => !o); setShowBm(false); }}
-                >
-                  🔗 {school.sharedWith?.length > 0 ? `Shared (${school.sharedWith.length})` : 'Share'}
-                </button>
-                {shareOpen && (
-                  <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 8, zIndex: 100, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                      <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', padding: '6px 8px 10px' }}>Share with broker</p>
-                      {brokers.length === 0
-                        ? <p style={{ fontSize: '0.8rem', color: '#9ca3af', padding: '0 8px 8px' }}>No brokers yet.</p>
-                        : brokers.map(broker => {
-                            const shared = (school.sharedWith || []).includes(broker.email);
-                            return (
-                              <button
-                                key={broker._id}
-                                disabled={sharing === broker.email}
-                                onClick={() => toggleShare(broker)}
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: shared ? '#f5f3ff' : 'transparent', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', fontFamily: 'inherit', gap: 8, transition: 'background 0.12s', opacity: sharing === broker.email ? 0.6 : 1 }}
-                              >
-                                <span style={{ fontSize: '0.83rem', fontWeight: 600, color: '#0f172a', flex: 1, textAlign: 'left' }}>{broker.name}</span>
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: shared ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>
-                                  {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
-                                </span>
-                              </button>
-                            );
-                          })
-                      }
-                    </div>
-                )}
-              </div>
+              <button
+                className={styles.backBtn}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={handleNativeShare}
+              >
+                🔗 {copied ? 'Link copied!' : 'Share'}
+              </button>
             )}
 
             {/* Bookmark button — admin only */}
@@ -606,7 +553,7 @@ export default function SchoolDetail() {
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
+                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
                               </span>
                             )
                           ) : (
@@ -647,7 +594,7 @@ export default function SchoolDetail() {
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
+                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
                               </span>
                             )
                           ) : (
@@ -684,7 +631,7 @@ export default function SchoolDetail() {
                             ) : (
                               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
+                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
                               </span>
                             )
                           ) : (

@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
 import useAuthFetch from '../../hooks/useAuthFetch';
-import { useAuth } from '../../context/AuthContext';
 import Filter from './Filter';
 import styles from './Results.module.css';
 import bmIcon from '../../assets/bookmark.png';
@@ -34,7 +33,6 @@ export default function Results() {
   const [params]   = useSearchParams();
   const navigate   = useNavigate();
   const apiFetch   = useAuthFetch();
-  const { user }   = useAuth();
   const type       = params.get('type') || 'schoolName';
   const q          = params.get('q') || '';
   const cacheKey   = `rc_${type}_${q}`;
@@ -70,40 +68,6 @@ export default function Results() {
   const loadingRef     = useRef(false);
   const restoredRef    = useRef(false);
 
-  // Share state (admin only)
-  const [brokers,   setBrokers]   = useState([]);
-  const [shareOpen, setShareOpen] = useState(null);
-  const [sharing,   setSharing]   = useState(null);
-
-  useEffect(() => {
-    if (user?.role !== 'admin') return;
-    apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
-      .then(r => r.json())
-      .then(d => setBrokers(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [apiFetch, user?.role]);
-
-  async function toggleShare(school, broker) {
-    const alreadyShared = (school.sharedWith || []).includes(broker.email);
-    setSharing(broker.email);
-    const endpoint = alreadyShared ? 'unshare' : 'share';
-    try {
-      await apiFetch(`${API_BASE}/api/schools/${school._id}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brokerEmail: broker.email }),
-      });
-      setResults(prev => prev.map(s => {
-        if (s._id !== school._id) return s;
-        const sharedWith = alreadyShared
-          ? (s.sharedWith || []).filter(e => e !== broker.email)
-          : [...(s.sharedWith || []), broker.email];
-        return { ...s, sharedWith };
-      }));
-    } catch {}
-    setSharing(null);
-  }
-
   // Initial fetch / re-fetch when search or filter changes
   useEffect(() => {
     // On first mount, try to restore from cache (user pressed Back)
@@ -113,20 +77,7 @@ export default function Results() {
       if (cached) {
         try {
           const { results: r, total: t, page: p, hasMore: h } = JSON.parse(cached);
-
-          // Apply any share update written by SchoolDetail before navigate(-1)
-          let patchedResults = r;
-          try {
-            const pending = sessionStorage.getItem('vistaar_share_update');
-            if (pending) {
-              const { _id, sharedWith } = JSON.parse(pending);
-              sessionStorage.removeItem('vistaar_share_update');
-              patchedResults = r.map(s => s._id === _id ? { ...s, sharedWith } : s);
-              sessionStorage.setItem(cacheKey, JSON.stringify({ results: patchedResults, total: t, page: p, hasMore: h }));
-            }
-          } catch {}
-
-          setResults(patchedResults);
+          setResults(r);
           setTotal(t);
           setPage(p);
           setHasMore(h);
@@ -401,42 +352,6 @@ export default function Results() {
               <div className={styles.cardBottom}>
                 {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
                 <div className={styles.cardActions}>
-                  {user?.role === 'admin' && (
-                    <div style={{ position: 'relative' }}>
-                      <button
-                        className={`${styles.shareBtn} ${(school.sharedWith?.length > 0) ? styles.shareBtnActive : ''}`}
-                        onClick={() => setShareOpen(shareOpen === school._id ? null : school._id)}
-                      >
-                        {school.sharedWith?.length > 0 ? `Shared (${school.sharedWith.length})` : 'Share'}
-                      </button>
-                      {shareOpen === school._id && (
-                        <>
-                          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShareOpen(null)} />
-                          <div className={styles.shareDropdown}>
-                            {brokers.length === 0
-                              ? <p className={styles.shareEmpty}>No brokers yet. Add in Admin panel.</p>
-                              : brokers.map(broker => {
-                                  const shared = (school.sharedWith || []).includes(broker.email);
-                                  return (
-                                    <button
-                                      key={broker._id}
-                                      className={`${styles.brokerOption} ${shared ? styles.brokerOptionShared : ''}`}
-                                      onClick={() => toggleShare(school, broker)}
-                                      disabled={sharing === broker.email}
-                                    >
-                                      <span className={styles.brokerOptionName}>{broker.name}</span>
-                                      <span className={styles.brokerOptionToggle}>
-                                        {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
-                                      </span>
-                                    </button>
-                                  );
-                                })
-                            }
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
                   <button
                     className={styles.viewBtn}
                     onClick={async () => {

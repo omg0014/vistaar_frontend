@@ -32,11 +32,6 @@ export default function Search() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Share UI state
-  const [brokers, setBrokers]         = useState([]);
-  const [shareOpen, setShareOpen]     = useState(null); // school._id
-  const [sharing, setSharing]         = useState(null); // broker email being toggled
-  const shareRefs                     = useRef({});
   const isFirstLeadsLoad              = useRef(true);
 
   // Hamburger menu
@@ -54,13 +49,7 @@ export default function Search() {
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
   useEffect(() => {
-    // Option A: instant patch from SchoolDetail navigation state — no skeleton
-    const updated = location.state?.updatedSchool;
-    if (updated) {
-      setLeads(prev => prev.map(l => l._id === updated._id ? { ...l, sharedWith: updated.sharedWith } : l));
-    }
-
-    // Option B: re-fetch on every navigation (location.key changes on every route visit,
+    // Re-fetch on every navigation (location.key changes on every route visit,
     // including browser back). Show skeleton only on the very first load.
     const silent = !isFirstLeadsLoad.current;
     isFirstLeadsLoad.current = false;
@@ -72,26 +61,6 @@ export default function Search() {
       .catch(() => { if (!silent) setLeadsLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key, apiFetch]);
-
-  // Fetch broker list for share dropdown (admin only)
-  useEffect(() => {
-    if (user?.role !== 'admin') return;
-    apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
-      .then(r => r.json())
-      .then(d => setBrokers(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [apiFetch, user]);
-
-  // Close share dropdown when clicking outside
-  useEffect(() => {
-    if (!shareOpen) return;
-    function handleClick(e) {
-      const ref = shareRefs.current[shareOpen];
-      if (ref && !ref.contains(e.target)) setShareOpen(null);
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [shareOpen]);
 
   useEffect(() => {
     if (type !== 'schoolName' || q.trim().length < 2) {
@@ -124,27 +93,6 @@ export default function Search() {
     setSuggestions([]);
     setShowSuggestions(false);
     navigate(`/results?type=schoolName&q=${encodeURIComponent(name)}&page=1`);
-  }
-
-  async function toggleShare(school, broker) {
-    const alreadyShared = school.sharedWith?.includes(broker.email);
-    setSharing(broker.email);
-    const endpoint = alreadyShared ? 'unshare' : 'share';
-    try {
-      await apiFetch(`${API_BASE}/api/schools/${school._id}/${endpoint}`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ brokerEmail: broker.email }),
-      });
-      setLeads(prev => prev.map(s => {
-        if (s._id !== school._id) return s;
-        const sharedWith = alreadyShared
-          ? (s.sharedWith || []).filter(e => e !== broker.email)
-          : [...(s.sharedWith || []), broker.email];
-        return { ...s, sharedWith };
-      }));
-    } catch {}
-    setSharing(null);
   }
 
   return (
@@ -254,12 +202,10 @@ export default function Search() {
               : leads.map(school => {
                   const eff = calcEfficiency(school);
                   const effColor = eff === null ? null : eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
-                  const sharedCount = school.sharedWith?.length || 0;
                   return (
                     <div
                       key={school._id}
                       className={styles.leadCard}
-                      ref={el => { shareRefs.current[school._id] = el; }}
                     >
                       <button
                         className={styles.leadClose}
@@ -269,42 +215,6 @@ export default function Search() {
                           setLeads(prev => prev.filter(s => s._id !== school._id));
                         }}
                       >✕</button>
-
-                      {user?.role === 'admin' && (
-                        <div className={styles.shareWrap}>
-                          <button
-                            className={`${styles.shareBtn} ${sharedCount > 0 ? styles.shareBtnActive : ''}`}
-                            onClick={e => { e.stopPropagation(); setShareOpen(shareOpen === school._id ? null : school._id); }}
-                            title="Share with broker"
-                          >
-                            {sharedCount > 0 ? `Shared (${sharedCount})` : 'Share'}
-                          </button>
-                          {shareOpen === school._id && (
-                            <div className={styles.shareDropdown} onClick={e => e.stopPropagation()}>
-                              {brokers.length === 0 ? (
-                                <p className={styles.shareEmpty}>No brokers. Add them in Admin.</p>
-                              ) : (
-                                brokers.map(broker => {
-                                  const shared = school.sharedWith?.includes(broker.email);
-                                  return (
-                                    <button
-                                      key={broker._id}
-                                      className={`${styles.brokerOption} ${shared ? styles.brokerOptionShared : ''}`}
-                                      onClick={() => toggleShare(school, broker)}
-                                      disabled={sharing === broker.email}
-                                    >
-                                      <span className={styles.brokerOptionName}>{broker.name}</span>
-                                      <span className={styles.brokerOptionToggle}>
-                                        {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
-                                      </span>
-                                    </button>
-                                  );
-                                })
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       <div onClick={() => { apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' }); navigate(`/school/${school._id}?col=${encodeURIComponent(school._source || '')}`); }}>
                         <p className={styles.leadName}>{school.schoolName}</p>
