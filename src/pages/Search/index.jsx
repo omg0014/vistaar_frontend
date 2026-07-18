@@ -5,7 +5,6 @@ import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
-import bmIcon from '../../assets/bookmark.png';
 
 const REGIONS = [
   { name: 'The Western Corridor',       short: 'TWC', desc: 'Maharashtra · Gujarat · Rajasthan', color: '#d97706' },
@@ -158,6 +157,7 @@ export default function Search() {
         {hamburgerOpen && (
           <div className={styles.hamburgerMenu}>
             <p className={styles.hamburgerName}>{user?.name}</p>
+            <button onClick={() => { setHamburgerOpen(false); navigate('/bookmarks'); }} className={styles.hamburgerItem}>Bookmarks</button>
             {user?.role === 'admin' && (
               <button onClick={() => { setHamburgerOpen(false); navigate('/admin'); }} className={styles.hamburgerItem}>Brokers</button>
             )}
@@ -197,7 +197,6 @@ export default function Search() {
               autoComplete="off"
             />
             <button className={styles.btn} onClick={handleSearch}>Search</button>
-            <button className={styles.btn} style={{ background: '#ede9fe', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => navigate('/bookmarks')}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmarks</button>
           </div>
           {showSuggestions && suggestions.length > 0 && (
             <div className={styles.suggestions}>
