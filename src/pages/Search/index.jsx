@@ -7,11 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
 
 const REGIONS = [
-  { name: 'The Western Corridor',       short: 'TWC', desc: 'Maharashtra · Gujarat · Rajasthan', color: '#d97706' },
-  { name: 'Central Hindi Heartland',    short: 'CHH', desc: 'Madhya Pradesh · Uttar Pradesh',    color: '#7c3aed' },
-  { name: 'The South Fifer',            short: 'TSF', desc: 'Tamil Nadu · Kerala · Karnataka',   color: '#16a34a' },
-  { name: 'The Real North',             short: 'TRN', desc: 'Haryana · Punjab · Chandigarh',     color: '#2563eb' },
-  { name: 'Eastern Marwadi Stronghold', short: 'EMS', desc: 'West Bengal · Odisha · Assam',      color: '#dc2626' },
+  { name: 'The West Coast',             short: 'TWC', centre: 'Gujarat',    states: ['RJ', 'GJ', 'MH', 'GA'],                    color: '#d97706' },
+  { name: 'Eastern Marwadi Stronghold', short: 'EMS', centre: 'Kolkata',    states: ['WB', 'OD', 'AS'],                          color: '#dc2626' },
+  { name: 'The South Fifer',            short: 'TSF', centre: 'Bangalore',  states: ['KA', 'AP', 'TS', 'TN', 'KL'],              color: '#16a34a' },
+  { name: 'The Real North',             short: 'TRN', centre: 'Chandigarh', states: ['JK', 'HR', 'PB', 'UK', 'HP'],              color: '#2563eb' },
+  { name: 'Central Hindi Heartland',    short: 'CHH', centre: 'Varanasi',   states: ['BR', 'UP', 'Delhi-NCR', 'MP', 'CG', 'JK'], color: '#7c3aed' },
 ];
 
 function calcEfficiency(school) {
@@ -177,11 +177,13 @@ export default function Search() {
 
       <div className={styles.regions}>
         {REGIONS.map(r => (
-          <div key={r.short} className={styles.regionCard}>
-            <span className={styles.regionDot} style={{ background: r.color }} />
-            <div>
-              <p className={styles.regionName}>{r.name}</p>
-              <p className={styles.regionDesc}>{r.desc}</p>
+          <div key={r.short} className={styles.regionCard} style={{ '--region-color': r.color }}>
+            <p className={styles.regionName}>{r.name}</p>
+            <p className={styles.regionCentre}>⬡ {r.centre}</p>
+            <div className={styles.regionStates}>
+              {r.states.map(s => (
+                <span key={s} className={styles.regionState}>{s}</span>
+              ))}
             </div>
           </div>
         ))}
