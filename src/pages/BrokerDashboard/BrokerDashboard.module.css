@@ -223,16 +223,28 @@
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .header { padding: 0 16px; }
+  .header { padding: 0 16px; height: auto; min-height: 56px; }
+  .userName { display: none; }
   .main { padding: 20px 12px 40px; }
+  .pageTitle { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .title { font-size: 1.1rem; }
+  .subtitle { font-size: 0.82rem; }
+  .countBadge { font-size: 0.75rem; padding: 3px 10px; }
+  .list { gap: 10px; }
   .card { padding: 14px; gap: 6px; }
   .cardTop { gap: 8px; }
   .schoolName { font-size: 0.88rem; }
-  .cardMeta { gap: 8px; }
-  .metaItem { font-size: 0.78rem; padding: 3px 8px; }
+  .address { font-size: 0.8rem; }
+  .location { font-size: 0.8rem; }
+  .cardMeta { gap: 8px; flex-wrap: wrap; }
+  .metaItem { font-size: 0.75rem; padding: 3px 8px; }
   .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
   .viewBtn { width: 100%; text-align: center; padding: 10px; }
-  .pageTitle { gap: 8px; }
-  .title { font-size: 1.15rem; }
-  .userName { display: none; }
+  .pincode { font-size: 0.78rem; }
+  .empty { padding: 40px 16px; }
+  .emptyIcon { font-size: 2rem; }
+  .emptyTitle { font-size: 0.95rem; }
+  .emptyDesc { font-size: 0.82rem; }
+  .footer { padding: 16px; flex-direction: column; gap: 4px; text-align: center; }
+  .footerText { font-size: 0.72rem; }
 }

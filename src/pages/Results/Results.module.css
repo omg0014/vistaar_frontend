@@ -249,11 +249,14 @@
   .card { padding: 14px; gap: 6px; }
   .cardTop { gap: 8px; }
   .schoolName { font-size: 0.88rem; }
-  .cardMeta { gap: 8px; }
-  .metaItem { font-size: 0.78rem; padding: 3px 8px; }
+  .address { font-size: 0.8rem; }
+  .location { font-size: 0.8rem; }
+  .cardMeta { gap: 8px; flex-wrap: wrap; }
+  .metaItem { font-size: 0.75rem; padding: 3px 8px; }
   .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .cardActions { width: 100%; flex-direction: column; }
+  .cardActions { width: 100%; flex-direction: column; gap: 8px; }
   .viewBtn { width: 100%; text-align: center; padding: 10px; }
-  .shareBtn { width: 100%; text-align: center; }
+  .shareBtn { width: 100%; text-align: center; padding: 10px; }
   .pincode { font-size: 0.78rem; }
+  .region { font-size: 0.72rem; padding: 2px 8px; }
 }
