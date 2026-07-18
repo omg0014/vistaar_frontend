@@ -353,6 +353,20 @@ export default function Results() {
                 {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
                 <div className={styles.cardActions}>
                   <button
+                    className={styles.shareBtn}
+                    onClick={async () => {
+                      const slug = school.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      const url = `${window.location.origin}/public/school/${slug}`;
+                      try {
+                        if (navigator.share) await navigator.share({ title: school.schoolName, url });
+                        else await navigator.clipboard.writeText(url);
+                      } catch {}
+                    }}
+                    title="Share"
+                  >
+                    ↗ Share
+                  </button>
+                  <button
                     className={styles.viewBtn}
                     onClick={async () => {
                       try {
