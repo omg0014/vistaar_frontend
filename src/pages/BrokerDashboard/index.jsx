@@ -27,110 +27,161 @@ export default function BrokerDashboard() {
   const apiFetch  = useAuthFetch();
   const { user, logout } = useAuth();
 
-  const cached = location.state?.brokerLeads;
-  const [leads,   setLeads]   = useState(cached || []);
-  const [loading, setLoading] = useState(!cached);
+  const restoreId = location.state?.restoreCollection || null;
+
+  const [collections, setCollections] = useState([]);
+  const [selected,    setSelected]    = useState(null);
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
-    if (cached) return; // already restored from navigation state, skip API call
-    apiFetch(`${API_BASE}/api/broker/leads`, { method: 'POST' })
+    apiFetch(`${API_BASE}/api/broker/collections`, { method: 'POST' })
       .then(r => r.json())
-      .then(d => { setLeads(d.leads || []); setLoading(false); })
+      .then(d => {
+        const cols = d.collections || [];
+        setCollections(cols);
+        if (restoreId) {
+          const col = cols.find(c => c._id === restoreId);
+          if (col) setSelected(col);
+        }
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, [apiFetch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [apiFetch, restoreId]);
 
+  const header = (
+    <header className={styles.header}>
+      <div className={styles.headerBrand}>
+        <span className={styles.brandName}>Vistaar</span>
+        <span className={styles.brandTag}>Broker Portal</span>
+      </div>
+      <div className={styles.headerRight}>
+        {user?.picture && <img src={user.picture} alt={user.name} className={styles.avatar} />}
+        <span className={styles.userName}>{user?.name}</span>
+        <button className={styles.logoutBtn} onClick={() => { logout(); navigate('/login'); }}>Logout</button>
+      </div>
+    </header>
+  );
+
+  const footer = (
+    <footer className={styles.footer}>
+      <span className={styles.footerBrand}>Vistaar</span>
+      <span className={styles.footerText}>The process of expanding, growing, or explaining something in greater detail.</span>
+    </footer>
+  );
+
+  /* ── Collection detail view: schools inside a shared collection ── */
+  if (selected) {
+    return (
+      <div className={styles.page}>
+        {header}
+        <main className={styles.main}>
+          <div className={styles.pageTitle}>
+            <button className={styles.logoutBtn} onClick={() => setSelected(null)} style={{ marginBottom: 12 }}>
+              ← Back to Collections
+            </button>
+            <h1 className={styles.title}>{selected.name}</h1>
+            <span className={styles.countBadge}>{selected.schools.length} school{selected.schools.length !== 1 ? 's' : ''}</span>
+          </div>
+
+          <div className={styles.list}>
+            {selected.schools.length === 0 && (
+              <div className={styles.empty}>
+                <div className={styles.emptyIcon}>📋</div>
+                <p className={styles.emptyTitle}>This collection is empty</p>
+              </div>
+            )}
+
+            {selected.schools.map(school => {
+              const eff = calcEfficiency(school);
+              return (
+                <div key={school._id} className={styles.card}>
+                  <div className={styles.cardTop}>
+                    <h2 className={styles.schoolName}>{school.schoolName}</h2>
+                    {school._source && <span className={styles.region}>{school._source}</span>}
+                  </div>
+
+                  {school.address && <p className={styles.address}>{school.address}</p>}
+                  <p className={styles.location}>
+                    {[school.district, school.state].filter(Boolean).join(', ')}
+                  </p>
+
+                  <div className={styles.cardMeta}>
+                    {school.totalStudents != null && (
+                      <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>
+                    )}
+                    {school.totalTeachers != null && (
+                      <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
+                    )}
+                    <EfficiencyBadge value={eff} />
+                  </div>
+
+                  <div className={styles.cardBottom}>
+                    {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
+                    <button
+                      className={styles.viewBtn}
+                      onClick={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, collectionId: selected._id } })}
+                    >
+                      View Report Card →
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </main>
+        {footer}
+      </div>
+    );
+  }
+
+  /* ── Collections list view ── */
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerBrand}>
-          <span className={styles.brandName}>Vistaar</span>
-          <span className={styles.brandTag}>Broker Portal</span>
-        </div>
-        <div className={styles.headerRight}>
-          {user?.picture && <img src={user.picture} alt={user.name} className={styles.avatar} />}
-          <span className={styles.userName}>{user?.name}</span>
-          <button className={styles.logoutBtn} onClick={() => { logout(); navigate('/login'); }}>Logout</button>
-        </div>
-      </header>
+      {header}
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>
-          <h1 className={styles.title}>Your Shared Leads</h1>
-          <p className={styles.subtitle}>Schools shared with you by the admin team</p>
-          {!loading && <span className={styles.countBadge}>{leads.length} school{leads.length !== 1 ? 's' : ''}</span>}
+          <h1 className={styles.title}>Your Collections</h1>
+          <p className={styles.subtitle}>School collections shared with you by the admin team</p>
+          {!loading && <span className={styles.countBadge}>{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>}
         </div>
 
         <div className={styles.list}>
-          {loading && [...Array(4)].map((_, i) => (
+          {loading && [...Array(3)].map((_, i) => (
             <div key={i} className={styles.card}>
               <div className={styles.cardTop}>
-                <div className={styles.skel} style={{ height: 16, width: '65%' }} />
-                <div className={styles.skel} style={{ height: 22, width: 60, borderRadius: 6 }} />
+                <div className={styles.skel} style={{ height: 16, width: '45%' }} />
               </div>
-              <div className={styles.skel} style={{ height: 13, width: '50%' }} />
-              <div className={styles.skel} style={{ height: 13, width: '40%' }} />
-              <div className={styles.cardMeta}>
-                <div className={styles.skel} style={{ height: 26, width: 110, borderRadius: 6 }} />
-                <div className={styles.skel} style={{ height: 26, width: 100, borderRadius: 6 }} />
-              </div>
-              <div className={styles.cardBottom}>
-                <div className={styles.skel} style={{ height: 13, width: 80 }} />
-                <div className={styles.skel} style={{ height: 34, width: 160, borderRadius: 8 }} />
-              </div>
+              <div className={styles.skel} style={{ height: 13, width: '30%' }} />
             </div>
           ))}
 
-          {!loading && leads.length === 0 && (
+          {!loading && collections.length === 0 && (
             <div className={styles.empty}>
               <div className={styles.emptyIcon}>📋</div>
-              <p className={styles.emptyTitle}>No leads shared yet</p>
-              <p className={styles.emptyDesc}>The admin will share school leads with you soon.</p>
+              <p className={styles.emptyTitle}>No collections shared yet</p>
+              <p className={styles.emptyDesc}>The admin will share school collections with you soon.</p>
             </div>
           )}
 
-          {!loading && leads.map(school => {
-            const eff = calcEfficiency(school);
-            return (
-              <div key={school._id} className={styles.card}>
-                <div className={styles.cardTop}>
-                  <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                  {school._source && <span className={styles.region}>{school._source}</span>}
-                </div>
-
-                {school.address && <p className={styles.address}>{school.address}</p>}
-                <p className={styles.location}>
-                  {[school.district, school.state].filter(Boolean).join(', ')}
-                </p>
-
-                <div className={styles.cardMeta}>
-                  {school.totalStudents != null && (
-                    <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>
-                  )}
-                  {school.totalTeachers != null && (
-                    <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
-                  )}
-                  <EfficiencyBadge value={eff} />
-                </div>
-
-                <div className={styles.cardBottom}>
-                  {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
-                  <button
-                    className={styles.viewBtn}
-                    onClick={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, brokerLeads: leads } })}
-                  >
-                    View Report Card →
-                  </button>
-                </div>
+          {!loading && collections.map(col => (
+            <div key={col._id} className={styles.card} onClick={() => setSelected(col)} style={{ cursor: 'pointer' }}>
+              <div className={styles.cardTop}>
+                <h2 className={styles.schoolName}>{col.name}</h2>
               </div>
-            );
-          })}
+              <p className={styles.location}>{col.schools.length} school{col.schools.length !== 1 ? 's' : ''}</p>
+              <div className={styles.cardBottom}>
+                <span />
+                <button className={styles.viewBtn} onClick={e => { e.stopPropagation(); setSelected(col); }}>
+                  Open Collection →
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
-      <footer className={styles.footer}>
-        <span className={styles.footerBrand}>Vistaar</span>
-        <span className={styles.footerText}>The process of expanding, growing, or explaining something in greater detail.</span>
-      </footer>
+      {footer}
     </div>
   );
 }

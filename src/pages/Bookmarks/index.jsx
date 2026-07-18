@@ -50,6 +50,38 @@ export default function Bookmarks() {
   const [scMenuOpen,   setScMenuOpen]   = useState(null);
   const [scSrchMenu,   setScSrchMenu]   = useState(null);
 
+  // Broker sharing (collections are shared with brokers as a whole)
+  const [brokers,      setBrokers]      = useState([]);
+  const [sharing,      setSharing]      = useState(null); // broker email being toggled
+
+  useEffect(() => {
+    apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => setBrokers(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [apiFetch]);
+
+  async function toggleShareCol(col, broker) {
+    const alreadyShared = (col.sharedWith || []).includes(broker.email);
+    setSharing(broker.email);
+    const endpoint = alreadyShared ? 'unshare' : 'share';
+    try {
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/${endpoint}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ brokerEmail: broker.email }),
+      });
+      setCols(prev => prev.map(c => {
+        if (c._id !== col._id) return c;
+        const sharedWith = alreadyShared
+          ? (c.sharedWith || []).filter(e => e !== broker.email)
+          : [...(c.sharedWith || []), broker.email];
+        return { ...c, sharedWith };
+      }));
+    } catch {}
+    setSharing(null);
+  }
+
   useEffect(() => {
     let done = 0;
     function checkDone() { if (++done === 2) setLoading(false); }
@@ -267,6 +299,27 @@ export default function Bookmarks() {
                         <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                         {menuOpen === col._id && (
                           <div style={MENU_STYLE}>
+                            <p style={{ padding: '10px 16px 6px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Share with broker</p>
+                            {brokers.length === 0
+                              ? <span style={{ display: 'block', padding: '0 16px 10px', fontSize: '0.82rem', color: '#9ca3af' }}>No brokers yet</span>
+                              : brokers.map(broker => {
+                                  const shared = (col.sharedWith || []).includes(broker.email);
+                                  return (
+                                    <button
+                                      key={broker._id}
+                                      disabled={sharing === broker.email}
+                                      onClick={() => toggleShareCol(col, broker)}
+                                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 16px', background: shared ? '#f5f3ff' : 'none', border: 'none', cursor: 'pointer', gap: 8, opacity: sharing === broker.email ? 0.6 : 1 }}
+                                    >
+                                      <span style={{ fontSize: '0.85rem', color: '#374151', textAlign: 'left', flex: 1 }}>{broker.name}</span>
+                                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: shared ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>
+                                        {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
+                                      </span>
+                                    </button>
+                                  );
+                                })
+                            }
+                            <div style={{ borderTop: '1px solid #f3f4f6', marginTop: 4 }} />
                             {col.schools.length === 0
                               ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
                               : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>

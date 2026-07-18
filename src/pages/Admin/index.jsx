@@ -5,22 +5,6 @@ import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Admin.module.css';
 
-function calcEfficiency(school) {
-  const capacity = (school.totalClassrooms || 0) * 35;
-  if (capacity === 0) return null;
-  return Math.round((school.totalStudents || 0) / capacity * 100);
-}
-
-function EfficiencyBadge({ value }) {
-  if (value === null) return null;
-  const color = value >= 75 ? '#16a34a' : value >= 40 ? '#d97706' : '#dc2626';
-  return (
-    <span className={styles.badge} style={{ background: color + '20', color }}>
-      {value}% efficiency
-    </span>
-  );
-}
-
 export default function AdminPanel() {
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -37,10 +21,10 @@ export default function AdminPanel() {
   const [deleting, setDeleting] = useState(null);
 
   // ── Broker detail state ──
-  const [selectedBroker,     setSelectedBroker]     = useState(null);
-  const [brokerLeads,        setBrokerLeads]        = useState([]);
-  const [brokerLeadsLoading, setBrokerLeadsLoading] = useState(false);
-  const [menuOpen,           setMenuOpen]           = useState(null); // school._id
+  const [selectedBroker,    setSelectedBroker]    = useState(null);
+  const [brokerCols,        setBrokerCols]        = useState([]);
+  const [brokerColsLoading, setBrokerColsLoading] = useState(false);
+  const [menuOpen,          setMenuOpen]          = useState(null); // collection._id
   const menuRefs                                    = useRef({});
 
   // Close 3-dot menu on outside click
@@ -69,26 +53,26 @@ export default function AdminPanel() {
       .catch(() => setLoading(false));
   }, [apiFetch]);
 
-  async function handleUnshare(school) {
+  async function handleUnshare(col) {
     try {
-      await apiFetch(`${API_BASE}/api/schools/${school._id}/unshare`, {
+      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/unshare`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ brokerEmail: selectedBroker.email }),
       });
-      setBrokerLeads(prev => prev.filter(l => l._id !== school._id));
+      setBrokerCols(prev => prev.filter(c => c._id !== col._id));
     } catch {}
     setMenuOpen(null);
   }
 
   function openBroker(broker) {
     setSelectedBroker(broker);
-    setBrokerLeads([]);
-    setBrokerLeadsLoading(true);
-    apiFetch(`${API_BASE}/api/admin/brokers/${broker._id}/leads`, { method: 'POST' })
+    setBrokerCols([]);
+    setBrokerColsLoading(true);
+    apiFetch(`${API_BASE}/api/admin/brokers/${broker._id}/collections`, { method: 'POST' })
       .then(r => r.json())
-      .then(d => { setBrokerLeads(d.leads || []); setBrokerLeadsLoading(false); })
-      .catch(() => setBrokerLeadsLoading(false));
+      .then(d => { setBrokerCols(d.collections || []); setBrokerColsLoading(false); })
+      .catch(() => setBrokerColsLoading(false));
   }
 
   async function handleAdd(e) {
@@ -114,7 +98,7 @@ export default function AdminPanel() {
   }
 
   async function handleDelete(broker) {
-    if (!window.confirm(`Remove broker "${broker.name}" (${broker.email})? This will unshare all their leads.`)) return;
+    if (!window.confirm(`Remove broker "${broker.name}" (${broker.email})? This will unshare all their collections.`)) return;
     setDeleting(broker._id);
     try {
       await apiFetch(`${API_BASE}/api/admin/brokers/${broker._id}`, { method: 'DELETE' });
@@ -162,14 +146,14 @@ export default function AdminPanel() {
                 <p className={styles.detailBrokerEmail}>{selectedBroker.email}</p>
               </div>
             </div>
-            {!brokerLeadsLoading && (
+            {!brokerColsLoading && (
               <span className={styles.countBadge}>
-                {brokerLeads.length} lead{brokerLeads.length !== 1 ? 's' : ''} shared
+                {brokerCols.length} collection{brokerCols.length !== 1 ? 's' : ''} shared
               </span>
             )}
           </div>
 
-          {brokerLeadsLoading && (
+          {brokerColsLoading && (
             <div className={styles.cardList}>
               {[...Array(3)].map((_, i) => (
                 <div key={i} className={styles.card}>
@@ -177,85 +161,63 @@ export default function AdminPanel() {
                     <div className={styles.skel} style={{ height: 16, width: '60%' }} />
                   </div>
                   <div className={styles.skel} style={{ height: 13, width: '45%' }} />
-                  <div className={styles.cardMeta}>
-                    <div className={styles.skel} style={{ height: 26, width: 110, borderRadius: 6 }} />
-                    <div className={styles.skel} style={{ height: 26, width: 90,  borderRadius: 6 }} />
-                  </div>
-                  <div className={styles.cardBottom}>
-                    <div className={styles.skel} style={{ height: 13, width: 70 }} />
-                    <div className={styles.skel} style={{ height: 34, width: 150, borderRadius: 8 }} />
-                  </div>
                 </div>
               ))}
             </div>
           )}
 
-          {!brokerLeadsLoading && brokerLeads.length === 0 && (
+          {!brokerColsLoading && brokerCols.length === 0 && (
             <div className={styles.emptyLeads}>
-              <p className={styles.emptyLeadsTitle}>No leads shared yet</p>
+              <p className={styles.emptyLeadsTitle}>No collections shared yet</p>
               <p className={styles.emptyLeadsDesc}>
-                Go to the Search page and share lead cards with {selectedBroker.name}.
+                Go to the Bookmarks page and share a collection with {selectedBroker.name}.
               </p>
             </div>
           )}
 
-          {!brokerLeadsLoading && brokerLeads.length > 0 && (
+          {!brokerColsLoading && brokerCols.length > 0 && (
             <div className={styles.cardList}>
-              {brokerLeads.map(school => {
-                const eff = calcEfficiency(school);
-                return (
-                  <div key={school._id} className={styles.card} style={{ position: 'relative' }}>
-                    <div
-                      ref={el => { menuRefs.current[school._id] = el; }}
-                      className={styles.menuWrap}
+              {brokerCols.map(col => (
+                <div key={col._id} className={styles.card} style={{ position: 'relative' }}>
+                  <div
+                    ref={el => { menuRefs.current[col._id] = el; }}
+                    className={styles.menuWrap}
+                  >
+                    <button
+                      className={styles.menuBtn}
+                      onClick={() => setMenuOpen(prev => prev === col._id ? null : col._id)}
+                      title="Options"
                     >
-                      <button
-                        className={styles.menuBtn}
-                        onClick={() => setMenuOpen(prev => prev === school._id ? null : school._id)}
-                        title="Options"
-                      >
-                        ⋮
-                      </button>
-                      {menuOpen === school._id && (
-                        <div className={styles.menuDropdown}>
-                          <button
-                            className={styles.menuItem}
-                            onClick={() => handleUnshare(school)}
-                          >
-                            Remove sharing
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className={styles.cardTop}>
-                      <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                      {school._source && <span className={styles.region}>{school._source}</span>}
-                    </div>
-                    {school.address && <p className={styles.address}>{school.address}</p>}
-                    <p className={styles.location}>
-                      {[school.district, school.state].filter(Boolean).join(', ')}
-                    </p>
-                    <div className={styles.cardMeta}>
-                      {school.totalStudents != null && (
-                        <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>
-                      )}
-                      {school.totalTeachers != null && (
-                        <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
-                      )}
-                      <EfficiencyBadge value={eff} />
-                    </div>
-                    <div className={styles.cardBottom}>
-                      {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
-                      <button
-                        className={styles.viewBtn}
-                        onClick={() => navigate(`/school/${school._id}`, { state: { fromAdmin: true, adminBroker: selectedBroker } })}
-                      >
-                        View Report Card →
-                      </button>
-                    </div>
+                      ⋮
+                    </button>
+                    {menuOpen === col._id && (
+                      <div className={styles.menuDropdown}>
+                        <button
+                          className={styles.menuItem}
+                          onClick={() => handleUnshare(col)}
+                        >
+                          Remove sharing
+                        </button>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                  <div className={styles.cardTop}>
+                    <h2 className={styles.schoolName}>{col.name}</h2>
+                  </div>
+                  <p className={styles.location}>
+                    {col.schools.length} school{col.schools.length !== 1 ? 's' : ''}
+                  </p>
+                  <div className={styles.cardBottom}>
+                    <span />
+                    <button
+                      className={styles.viewBtn}
+                      onClick={() => navigate(`/bookmarks?col=${col._id}`)}
+                    >
+                      View Collection →
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </main>
@@ -276,7 +238,7 @@ export default function AdminPanel() {
       <main className={styles.main}>
         <div className={styles.pageTitle}>
           <h1 className={styles.title}>Broker Management</h1>
-          <p className={styles.subtitle}>Add broker accounts and share school leads with them</p>
+          <p className={styles.subtitle}>Add broker accounts and share bookmark collections with them</p>
         </div>
 
         <div className={styles.addCard}>
@@ -303,7 +265,7 @@ export default function AdminPanel() {
             </button>
           </form>
           {error && <p className={styles.error}>{error}</p>}
-          <p className={styles.hint}>The broker logs in with this Google account and sees only leads you share with them.</p>
+          <p className={styles.hint}>The broker logs in with this Google account and sees only the bookmark collections you share with them.</p>
         </div>
 
         <div className={styles.listSection}>
