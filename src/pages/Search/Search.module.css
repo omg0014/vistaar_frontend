@@ -296,43 +296,87 @@
 
 .regions {
   display: flex;
-  gap: 12px;
-  padding: 32px 40px 32px;
+  gap: 14px;
+  padding: 32px 40px;
   width: 100%;
 }
 
 .regionCard {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 0;
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 18px;
+  border-radius: 16px;
+  padding: 20px 20px 16px;
   flex: 1;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   transition: box-shadow 0.2s, transform 0.2s;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
-.regionCard:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.regionCard:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-3px); }
+
+/* colored top accent bar */
+.regionCard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--region-color, #7c3aed);
+}
 
 .regionDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   flex-shrink: 0;
+  margin-bottom: 12px;
+  opacity: 0.15;
+  display: none;
 }
 
 .regionName {
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
 }
 
-.regionDesc {
-  font-size: 0.78rem;
+.regionCentre {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--region-color, #7c3aed);
+  background: color-mix(in srgb, var(--region-color, #7c3aed) 10%, transparent);
+  border-radius: 20px;
+  padding: 2px 8px;
+  margin-bottom: 8px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.regionStates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.regionState {
+  font-size: 0.65rem;
+  font-weight: 600;
   color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  letter-spacing: 0.03em;
 }
 
 .leadsSection {
