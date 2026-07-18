@@ -299,7 +299,8 @@ function Val({ v, fieldKey, school }) {
 }
 
 export default function SchoolDetail({ publicMode = false }) {
-  const { id }                  = useParams();
+  const params_                 = useParams();
+  const id                      = params_.id || params_.slug; // public mode uses :slug param
   const [params]                = useSearchParams();
   const navigate                = useNavigate();
   const location                = useLocation();
@@ -327,7 +328,7 @@ export default function SchoolDetail({ publicMode = false }) {
   async function handleNativeShare() {
     if (!school) return;
     const slug = school.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const url  = `${window.location.origin}/public/school/${id}/${slug}`;
+    const url  = `${window.location.origin}/public/school/${slug}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: school.schoolName, url });
@@ -354,8 +355,11 @@ export default function SchoolDetail({ publicMode = false }) {
           document.title = `${d.schoolName} — Vistaar`;
           const slug = d.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           const colParam = col ? `?col=${encodeURIComponent(col)}` : '';
-          const base = publicMode ? '/public/school' : '/school';
-          window.history.replaceState(null, '', `${base}/${id}/${slug}${colParam}`);
+          if (publicMode) {
+            window.history.replaceState(null, '', `/public/school/${slug}`);
+          } else {
+            window.history.replaceState(null, '', `/school/${id}/${slug}${colParam}`);
+          }
         }
         setLoading(false);
       })
