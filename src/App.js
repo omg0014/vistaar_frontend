@@ -40,8 +40,7 @@ function App() {
       <Routes>
         <Route path="/login"        element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/public/school/:id"       element={<SchoolDetail publicMode />} />
-        <Route path="/public/school/:id/:slug" element={<SchoolDetail publicMode />} />
+        <Route path="/public/school/:slug" element={<SchoolDetail publicMode />} />
         <Route path="/"             element={<AdminRoute><Search /></AdminRoute>} />
         <Route path="/results"      element={<AdminRoute><Results /></AdminRoute>} />
         <Route path="/school/:id"       element={<PrivateRoute><SchoolDetail /></PrivateRoute>} />
