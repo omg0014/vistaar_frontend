@@ -5,7 +5,6 @@ import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
-import bmIcon from '../../assets/bookmark.png';
 
 const REGIONS = [
   { name: 'The Western Corridor',       short: 'TWC', desc: 'Maharashtra · Gujarat · Rajasthan', color: '#d97706' },
