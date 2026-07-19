@@ -173,7 +173,10 @@ export default function Bookmarks() {
       <div className={styles.page}>
         {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => { setSelected(null); setSearchParams({}); }}>← Collections</button>
+          {selected.schools.length === 0
+            ? <button className={styles.backBtn} onClick={() => navigate('/')}>← Back to Search</button>
+            : <button className={styles.backBtn} onClick={() => { setSelected(null); setSearchParams({}); }}>← Collections</button>
+          }
           <span className={styles.title}>{selected.name}</span>
           <span className={styles.count}>{selected.schools.length} schools</span>
         </div>
