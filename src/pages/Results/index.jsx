@@ -8,7 +8,7 @@ import styles from './Results.module.css';
 import bmIcon from '../../assets/bookmark.png';
 import { calcEfficiency } from '../../utils/efficiency';
 import EfficiencyBadge from '../../components/EfficiencyBadge';
-import BookmarkMenu from '../../components/BookmarkMenu';
+import CardActionsMenu from '../../components/CardActionsMenu';
 
 const LIMIT = 10;
 
@@ -262,14 +262,7 @@ export default function Results() {
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {school._source && <span className={styles.region}>{school._source}</span>}
-                  <BookmarkMenu
-                    school={school}
-                    trigger={({ onClick, open }) => (
-                      <button aria-label="Bookmark this school" title="Bookmark" onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: open ? 1 : 0.55 }}>
-                        <img src={bmIcon} alt="" style={{ width: 18, height: 18, display: 'block' }} />
-                      </button>
-                    )}
-                  />
+                  <CardActionsMenu school={school} />
                 </div>
               </div>
 
@@ -291,20 +284,6 @@ export default function Results() {
               <div className={styles.cardBottom}>
                 {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
                 <div className={styles.cardActions}>
-                  <button
-                    className={styles.shareBtn}
-                    onClick={async () => {
-                      const slug = school.schoolName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                      const url = `${window.location.origin}/public/school/${slug}`;
-                      try {
-                        if (navigator.share) await navigator.share({ title: school.schoolName, url });
-                        else await navigator.clipboard.writeText(url);
-                      } catch {}
-                    }}
-                    title="Share"
-                  >
-                    ↗ Share
-                  </button>
                   <button
                     className={styles.viewBtn}
                     onClick={async () => {
