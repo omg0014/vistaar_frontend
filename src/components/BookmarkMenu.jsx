@@ -1,46 +1,15 @@
 import { useState } from 'react';
-import { API_BASE } from '../constants/api';
-import useAuthFetch from '../hooks/useAuthFetch';
+import useBookmarkCollections from '../hooks/useBookmarkCollections';
 
 export default function BookmarkMenu({ school, trigger, align = 'right' }) {
-  const apiFetch = useAuthFetch();
   const [open, setOpen] = useState(false);
-  const [cols, setCols] = useState([]);
-  const [newName, setNewName] = useState('');
+  const { cols, newName, setNewName, refresh, toggle, createCol } = useBookmarkCollections(school);
 
   function toggleOpen(e) {
     e.stopPropagation();
     if (open) { setOpen(false); return; }
-    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' })
-      .then(r => r.json())
-      .then(setCols)
-      .catch(() => {});
+    refresh();
     setOpen(true);
-  }
-
-  async function toggle(col) {
-    const inCol = col.schools.some(s => s._id === school._id);
-    if (inCol) {
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
-    } else {
-      const s = {
-        _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state,
-        totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms,
-      };
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }),
-      });
-    }
-    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setCols).catch(() => {});
-  }
-
-  async function createCol() {
-    if (!newName.trim()) return;
-    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName.trim() }),
-    }).then(r => r.json());
-    setNewName('');
-    setCols(prev => [...prev, col]);
   }
 
   return (
