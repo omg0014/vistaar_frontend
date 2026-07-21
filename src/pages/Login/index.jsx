@@ -71,7 +71,7 @@ export default function Login() {
     <div
       className={styles.page}
       style={{
-        backgroundImage: `url(${process.env.PUBLIC_URL}/image.png)`,
+        backgroundImage: `url(${process.env.PUBLIC_URL}/image.jpeg)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

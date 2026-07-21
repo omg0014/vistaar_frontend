@@ -88,7 +88,7 @@
 
 .hero {
   width: 100%;
-  background-color: #1a1a2e; /* fallback if image.png fails to load */
+  background-color: #1a1a2e; /* fallback if image.jpeg fails to load */
   background-size: cover;
   background-position: center;
   display: flex;
