@@ -104,7 +104,7 @@ export default function Search() {
             {user?.role === 'admin' && (
               <button onClick={() => { setHamburgerOpen(false); navigate('/admin'); }} className={styles.hamburgerItem}>Brokers</button>
             )}
-            <button onClick={() => { logout(); navigate('/login'); }} className={styles.hamburgerItem}>Logout</button>
+            <button onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }} className={styles.hamburgerItem}>Logout</button>
           </div>
         )}
       </div>

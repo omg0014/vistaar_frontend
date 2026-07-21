@@ -43,7 +43,7 @@ export default function BrokerDashboard() {
       <div className={styles.headerRight}>
         {user?.picture && <img src={user.picture} alt={user.name} className={styles.avatar} />}
         <span className={styles.userName}>{user?.name}</span>
-        <button className={styles.logoutBtn} onClick={() => { logout(); navigate('/login'); }}>Logout</button>
+        <button className={styles.logoutBtn} onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }}>Logout</button>
       </div>
     </header>
   );
