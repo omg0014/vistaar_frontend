@@ -6,6 +6,7 @@ const Search         = lazy(() => import('./pages/Search'));
 const Results        = lazy(() => import('./pages/Results'));
 const SchoolDetail    = lazy(() => import('./pages/SchoolDetail'));
 const Bookmarks       = lazy(() => import('./pages/Bookmarks'));
+const SavedSearches   = lazy(() => import('./pages/SavedSearches'));
 const Login           = lazy(() => import('./pages/Login'));
 const AuthCallback    = lazy(() => import('./pages/AuthCallback'));
 const AdminPanel      = lazy(() => import('./pages/Admin'));
@@ -62,6 +63,7 @@ function App() {
           <Route path="/school/:id"       element={<PrivateRoute><SchoolDetail /></PrivateRoute>} />
           <Route path="/school/:id/:slug" element={<PrivateRoute><SchoolDetail /></PrivateRoute>} />
           <Route path="/bookmarks"    element={<AdminRoute><Bookmarks /></AdminRoute>} />
+          <Route path="/saved-searches" element={<AdminRoute><SavedSearches /></AdminRoute>} />
           <Route path="/admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
           <Route path="/broker"       element={<BrokerRoute><BrokerDashboard /></BrokerRoute>} />
         </Routes>

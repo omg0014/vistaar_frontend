@@ -2,14 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
-import { useAuth } from '../../context/AuthContext';
+import SearchHeader from '../../components/SearchHeader';
+import HeaderMenu from '../../components/HeaderMenu';
 import styles from './Admin.module.css';
+
+const SUBTITLE = "'विस्तार' मार्गदर्शेन, भारतं विश्वगौरवम्।\nयुगपुरुषाः युगरूपाश्च, शिक्षया सन्तु दीपिताः॥";
+const SUBTITLE_EN = 'Guided by the vast vision of the Vistaar app, may Bharat rise to its destiny as a global leader by the year 2047. Through excellence in education, may our students—both young men and women—be illuminated as the architects and changemakers of this new era.';
+const MODE_OPTIONS = [{ value: 'search', label: 'Search' }, { value: 'create', label: 'Create' }];
 
 export default function AdminPanel() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const apiFetch  = useAuthFetch();
-  const { user, logout } = useAuth();
 
   // ── Broker list state ──
   const [brokers,  setBrokers]  = useState([]);
@@ -19,6 +23,11 @@ export default function AdminPanel() {
   const [adding,   setAdding]   = useState(false);
   const [error,    setError]    = useState('');
   const [deleting, setDeleting] = useState(null);
+
+  // ── Header search / create ──
+  const [mode,         setMode]         = useState('search');
+  const [query,        setQuery]        = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
 
   // ── Broker detail state ──
   const [selectedBroker,    setSelectedBroker]    = useState(null);
@@ -75,10 +84,9 @@ export default function AdminPanel() {
       .catch(() => setBrokerColsLoading(false));
   }
 
-  async function handleAdd(e) {
-    e.preventDefault();
+  async function addBroker() {
     setError('');
-    if (!newEmail.trim() || !newName.trim()) return;
+    if (!newName.trim() || !newEmail.trim()) { setError('Both name and email are required.'); return; }
     setAdding(true);
     try {
       const res  = await apiFetch(`${API_BASE}/api/admin/brokers`, {
@@ -97,6 +105,12 @@ export default function AdminPanel() {
     setAdding(false);
   }
 
+  function submitHeader() {
+    if (mode === 'create') addBroker();
+    else setAppliedQuery(query.trim());
+  }
+  function headerKeyDown(e) { if (e.key === 'Enter') submitHeader(); }
+
   async function handleDelete(broker) {
     if (!window.confirm(`Remove broker "${broker.name}" (${broker.email})? This will unshare all their collections.`)) return;
     setDeleting(broker._id);
@@ -108,35 +122,20 @@ export default function AdminPanel() {
     setDeleting(null);
   }
 
-  const header = (
-    <header className={styles.header}>
-      <div className={styles.headerBrand}>
-        <span className={styles.brandName}>Vistaar</span>
-        <span className={styles.brandTag}>Admin</span>
-      </div>
-      <nav className={styles.nav}>
-        <button className={styles.navBtn} onClick={() => navigate('/')}>Search</button>
-        <button className={styles.navBtn} onClick={() => navigate('/bookmarks')}>Bookmarks</button>
-        <button className={styles.navBtnActive}>Brokers</button>
-      </nav>
-      <div className={styles.headerRight}>
-        {user?.picture && <img src={user.picture} alt={user.name} className={styles.avatar} />}
-        <span className={styles.userName}>{user?.name}</span>
-        <button className={styles.logoutBtn} onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }}>Logout</button>
-      </div>
-    </header>
-  );
-
   /* ── Broker detail view ── */
   if (selectedBroker) {
     return (
       <div className={styles.page}>
-        {header}
+        <SearchHeader
+          title="Vistaar"
+          subtitle={SUBTITLE}
+          tooltip={SUBTITLE_EN}
+          onBack={() => setSelectedBroker(null)}
+          backLabel="← Back to Brokers"
+          rightSlot={<HeaderMenu />}
+        />
         <main className={styles.main}>
           <div className={styles.detailTopBar}>
-            <button className={styles.backBtn} onClick={() => setSelectedBroker(null)}>
-              ← Back to Brokers
-            </button>
             <div className={styles.detailBrokerInfo}>
               <div className={styles.brokerInitialLg}>
                 {selectedBroker.name?.charAt(0).toUpperCase()}
@@ -232,45 +231,49 @@ export default function AdminPanel() {
   }
 
   /* ── Broker list view ── */
+  const q = appliedQuery.trim().toLowerCase();
+  const filtering = mode === 'search' && q !== '';
+  const visibleBrokers = filtering
+    ? brokers.filter(b => (b.name || '').toLowerCase().includes(q) || (b.email || '').toLowerCase().includes(q))
+    : brokers;
+
   return (
     <div className={styles.page}>
-      {header}
+      <SearchHeader
+        title="Vistaar"
+        subtitle={SUBTITLE}
+        tooltip={SUBTITLE_EN}
+        onBack={() => navigate('/')}
+        backLabel="← Back to Search"
+        rightSlot={<HeaderMenu />}
+        options={MODE_OPTIONS}
+        mode={mode}
+        onModeChange={v => { setMode(v); setQuery(''); setAppliedQuery(''); setError(''); }}
+        value={mode === 'create' ? newName : query}
+        onChange={mode === 'create' ? setNewName : setQuery}
+        onKeyDown={headerKeyDown}
+        onSubmit={submitHeader}
+        placeholder={mode === 'search' ? 'Search brokers by name or email…' : 'Full name'}
+        icon={mode === 'create' ? 'plus' : 'search'}
+        secondValue={newEmail}
+        onSecondChange={setNewEmail}
+        secondPlaceholder={mode === 'create' ? 'Google account email' : undefined}
+      />
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>
           <h1 className={styles.title}>Broker Management</h1>
-          <p className={styles.subtitle}>Add broker accounts and share bookmark collections with them</p>
-        </div>
-
-        <div className={styles.addCard}>
-          <h2 className={styles.addTitle}>Add New Broker</h2>
-          <form className={styles.addForm} onSubmit={handleAdd}>
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="Full name"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              required
-            />
-            <input
-              className={styles.input}
-              type="email"
-              placeholder="Google account email"
-              value={newEmail}
-              onChange={e => setNewEmail(e.target.value)}
-              required
-            />
-            <button className={styles.addBtn} type="submit" disabled={adding}>
-              {adding ? 'Adding…' : '+ Add Broker'}
-            </button>
-          </form>
+          <p className={styles.subtitle}>
+            {mode === 'create'
+              ? 'Enter a name and Google email above, then + to add a broker.'
+              : 'Search brokers by name or email, or switch to Create to add one.'}
+          </p>
           {error && <p className={styles.error}>{error}</p>}
-          <p className={styles.hint}>The broker logs in with this Google account and sees only the bookmark collections you share with them.</p>
+          {mode === 'create' && adding && <p className={styles.hint}>Adding…</p>}
         </div>
 
         <div className={styles.listSection}>
-          <h2 className={styles.listTitle}>Brokers ({brokers.length})</h2>
+          <h2 className={styles.listTitle}>Brokers ({brokers.length}){filtering ? ` · ${visibleBrokers.length} matching` : ''}</h2>
           {loading ? (
             <div className={styles.brokerList}>
               {[...Array(3)].map((_, i) => (
@@ -284,10 +287,12 @@ export default function AdminPanel() {
               ))}
             </div>
           ) : brokers.length === 0 ? (
-            <p className={styles.emptyText}>No brokers yet. Add one above.</p>
+            <p className={styles.emptyText}>No brokers yet. Switch the dropdown to “Create” to add one.</p>
+          ) : visibleBrokers.length === 0 ? (
+            <p className={styles.emptyText}>No brokers match “{appliedQuery}”.</p>
           ) : (
             <div className={styles.brokerList}>
-              {brokers.map(broker => (
+              {visibleBrokers.map(broker => (
                 <div
                   key={broker._id}
                   className={styles.brokerRow}
