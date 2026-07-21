@@ -187,6 +187,7 @@ export default function AdminPanel() {
                       className={styles.menuBtn}
                       onClick={() => setMenuOpen(prev => prev === col._id ? null : col._id)}
                       title="Options"
+                      aria-label={`Options for ${col.name}`}
                     >
                       ⋮
                     </button>

@@ -5,6 +5,8 @@ import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './SchoolDetail.module.css';
 import bmIcon from '../../assets/bookmark.png';
+import BookmarkMenu from '../../components/BookmarkMenu';
+import { calcEfficiency } from '../../utils/efficiency';
 
 const SECTIONS = [
   {
@@ -298,6 +300,53 @@ function Val({ v, fieldKey, school }) {
   return String(v);
 }
 
+// The Google-Maps-location cell is the one editable field. Extracted so the
+// edit/save/cancel markup lives in exactly one place instead of being copied
+// into each of the three section grids below.
+function GoogleMapLocCell({ school, locVal, editLoc, setEditLoc, setLocVal, canEdit, onSave }) {
+  if (editLoc) {
+    return (
+      <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
+        <button onClick={onSave} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
+        <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
+      {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
+    </span>
+  );
+}
+
+// Renders one titled section as a label/value table. googleMapLoc gets the
+// editable cell; every other field renders through <Val/>.
+function SectionTable({ section, school, locProps }) {
+  return (
+    <div className={styles.section}>
+      <h2 className={styles.sectionTitle}>{section.title}</h2>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <tbody>
+            {section.fields.map(([label, key]) => (
+              <tr key={key} className={styles.row}>
+                <td className={styles.tdLabel}>{label}</td>
+                <td className={styles.tdVal}>
+                  {key === 'googleMapLoc'
+                    ? <GoogleMapLocCell school={school} {...locProps} />
+                    : <Val v={school[key]} fieldKey={key} school={school} />}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function SchoolDetail({ publicMode = false }) {
   const params_                 = useParams();
   const id                      = params_.id || params_.slug; // public mode uses :slug param
@@ -316,12 +365,20 @@ export default function SchoolDetail({ publicMode = false }) {
   const [school, setSchool]     = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
-  const [showBm, setShowBm]         = useState(false);
-  const [bmCols, setBmCols]         = useState([]);
-  const [newColName, setNewColName] = useState('');
   const [editLoc, setEditLoc]       = useState(false);
   const [locVal, setLocVal]         = useState('');
   const canEdit                     = !publicMode && user?.role === 'admin';
+
+  async function saveLoc() {
+    await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleMapLoc: locVal }),
+    });
+    setSchool(prev => ({ ...prev, googleMapLoc: locVal }));
+    setEditLoc(false);
+  }
+  const locProps = { locVal, editLoc, setEditLoc, setLocVal, canEdit, onSave: saveLoc };
 
   // Native share (admin only) — public read-only link via Web Share API
   const [copied, setCopied] = useState(false);
@@ -367,32 +424,6 @@ export default function SchoolDetail({ publicMode = false }) {
     return () => { document.title = 'Vistaar — School Data Explorer'; };
   }, [id, col, apiFetch, publicMode]);
 
-  function openBm() {
-    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' })
-      .then(r => r.json())
-      .then(setBmCols)
-      .catch(() => {});
-    setShowBm(true);
-  }
-
-  async function toggleBm(col) {
-    const inCol = col.schools.some(s => s._id === school._id);
-    if (inCol) {
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
-    } else {
-      const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
-    }
-    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
-  }
-
-  async function createBmCol() {
-    if (!newColName.trim()) return;
-    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newColName.trim() }) }).then(r => r.json());
-    setNewColName('');
-    setBmCols(prev => [...prev, col]);
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -423,33 +454,16 @@ export default function SchoolDetail({ publicMode = false }) {
             )}
 
             {/* Bookmark button — admin only */}
-            {user?.role !== 'broker' && <div style={{ position: 'relative' }}>
-              <button className={styles.backBtn} onClick={openBm} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><img src={bmIcon} alt="bookmark" style={{ width: 16, height: 16 }} /> Bookmark</button>
-              {showBm && (
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowBm(false)} />
-                  <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
-                    {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
-                    {bmCols.map(col => {
-                      const inCol = col.schools.some(s => s._id === school._id);
-                      return (
-                        <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
-                          <button onClick={() => toggleBm(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
-                            {inCol ? 'Remove' : '+ Add'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={newColName} onChange={e => setNewColName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
-                      <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>}
+            {user?.role !== 'broker' && (
+              <BookmarkMenu
+                school={school}
+                trigger={({ onClick }) => (
+                  <button className={styles.backBtn} onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <img src={bmIcon} alt="" style={{ width: 16, height: 16 }} /> Bookmark
+                  </button>
+                )}
+              />
+            )}
 
           </div>
         )}
@@ -516,8 +530,7 @@ export default function SchoolDetail({ publicMode = false }) {
                 icon = schoolTypeDisplay(school.schoolType).emoji;
                 val  = school.totalStudents ?? '—';
               } else if (s.key === 'totalClassrooms') {
-                const cap = (school.totalClassrooms || 0) * 35;
-                const eff = cap > 0 ? Math.round((school.totalStudents || 0) / cap * 100) : null;
+                const eff = calcEfficiency(school);
                 val = <>{school.totalClassrooms ?? '—'}{eff !== null && <span style={{ fontSize: '0.85em' }}> ({eff}%)</span>}</>;
               } else if (s.key === '_classes') {
                 const lo = school.lowestClass;
@@ -537,40 +550,9 @@ export default function SchoolDetail({ publicMode = false }) {
           </div>
 
           <div className={styles.sectionsGrid}>
-          {SECTIONS.slice(0, 2).map(sec => (
-            <div key={sec.title} className={styles.section}>
-              <h2 className={styles.sectionTitle}>{sec.title}</h2>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <tbody>
-                    {sec.fields.map(([label, key]) => (
-                      <tr key={key} className={styles.row}>
-                        <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}>
-                          {key === 'googleMapLoc' ? (
-                            editLoc ? (
-                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
-                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
-                              </span>
-                            ) : (
-                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
-                              </span>
-                            )
-                          ) : (
-                            <Val v={school[key]} fieldKey={key} school={school} />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+            {SECTIONS.slice(0, 2).map(sec => (
+              <SectionTable key={sec.title} section={sec} school={school} locProps={locProps} />
+            ))}
           </div>
 
           <StudentsSection school={school} />
@@ -578,77 +560,15 @@ export default function SchoolDetail({ publicMode = false }) {
           <TeachersSection school={school} />
 
           <div className={styles.sectionsGrid}>
-          {SECTIONS.slice(2, 4).map(sec => (
-            <div key={sec.title} className={styles.section}>
-              <h2 className={styles.sectionTitle}>{sec.title}</h2>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <tbody>
-                    {sec.fields.map(([label, key]) => (
-                      <tr key={key} className={styles.row}>
-                        <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}>
-                          {key === 'googleMapLoc' ? (
-                            editLoc ? (
-                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
-                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
-                              </span>
-                            ) : (
-                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
-                              </span>
-                            )
-                          ) : (
-                            <Val v={school[key]} fieldKey={key} school={school} />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+            {SECTIONS.slice(2, 4).map(sec => (
+              <SectionTable key={sec.title} section={sec} school={school} locProps={locProps} />
+            ))}
           </div>
 
           <div className={styles.sectionsGrid}>
-          {SECTIONS.slice(4).map(sec => (
-            <div key={sec.title} className={styles.section}>
-              <h2 className={styles.sectionTitle}>{sec.title}</h2>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <tbody>
-                    {sec.fields.map(([label, key]) => (
-                      <tr key={key} className={styles.row}>
-                        <td className={styles.tdLabel}>{label}</td>
-                        <td className={styles.tdVal}>
-                          {key === 'googleMapLoc' ? (
-                            editLoc ? (
-                              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                <input autoFocus value={locVal} onChange={e => setLocVal(e.target.value)} style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
-                                <button onClick={async () => { await apiFetch(`${API_BASE}/api/schools/school/${id}/googlemaploc`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ googleMapLoc: locVal }) }); setSchool(prev => ({ ...prev, googleMapLoc: locVal })); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Save</button>
-                                <button onClick={() => { setLocVal(school.googleMapLoc || ''); setEditLoc(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
-                              </span>
-                            ) : (
-                              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                {locVal ? (locVal.startsWith('http') ? <a href={locVal} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>{locVal}</a> : <span style={{ wordBreak: 'break-all' }}>{locVal}</span>) : <span className={styles.empty}>—</span>}
-                                {canEdit && <button onClick={() => setEditLoc(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>}
-                              </span>
-                            )
-                          ) : (
-                            <Val v={school[key]} fieldKey={key} school={school} />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+            {SECTIONS.slice(4).map(sec => (
+              <SectionTable key={sec.title} section={sec} school={school} locProps={locProps} />
+            ))}
           </div>
         </div>
       )}

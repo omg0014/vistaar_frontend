@@ -21,12 +21,14 @@ stages:
 variables:
   DEPLOY_PATH: "/srv/vistaar-dashboard"
 
-# Build gate — CI=false so CRA's warnings-as-errors don't fail a valid build.
+# Build gate — CI=false on the build step so CRA's warnings-as-errors don't
+# fail a valid build; tests run with CI=true so watch mode stays off.
 build_test:
   stage: ci
   image: node:20-bullseye
   script:
     - npm ci
+    - CI=true npm test -- --watchAll=false
     - CI=false npm run build
 
 deploy_production:

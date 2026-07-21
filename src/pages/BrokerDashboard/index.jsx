@@ -4,22 +4,8 @@ import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './BrokerDashboard.module.css';
-
-function calcEfficiency(school) {
-  const capacity = (school.totalClassrooms || 0) * 35;
-  if (capacity === 0) return null;
-  return Math.round((school.totalStudents || 0) / capacity * 100);
-}
-
-function EfficiencyBadge({ value }) {
-  if (value === null) return null;
-  const color = value >= 75 ? '#16a34a' : value >= 40 ? '#d97706' : '#dc2626';
-  return (
-    <span className={styles.badge} style={{ background: color + '20', color }}>
-      {value}% efficiency
-    </span>
-  );
-}
+import { calcEfficiency } from '../../utils/efficiency';
+import EfficiencyBadge from '../../components/EfficiencyBadge';
 
 export default function BrokerDashboard() {
   const navigate  = useNavigate();
@@ -112,7 +98,7 @@ export default function BrokerDashboard() {
                     {school.totalTeachers != null && (
                       <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
                     )}
-                    <EfficiencyBadge value={eff} />
+                    <EfficiencyBadge value={eff} className={styles.badge} />
                   </div>
 
                   <div className={styles.cardBottom}>
