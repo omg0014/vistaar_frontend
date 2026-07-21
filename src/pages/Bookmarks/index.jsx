@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
@@ -42,6 +42,10 @@ export default function Bookmarks() {
   const [selected,     setSelected]     = useState(null);
   const [newName,      setNewName]      = useState('');
   const [menuOpen,     setMenuOpen]     = useState(null);
+  const dragIndexRef                    = useRef(null);
+  const [dragId,       setDragId]       = useState(null);
+  const schoolDragIndexRef              = useRef(null);
+  const [schoolDragId, setSchoolDragId] = useState(null);
 
   // Search collections
   const [scCols,       setScCols]       = useState([]);
@@ -142,6 +146,40 @@ export default function Bookmarks() {
     setSelected(prev => prev ? { ...prev, schools: updated(prev.schools) } : null);
   }
 
+  // ── Drag-to-reorder collections ────────────────────────────
+  function handleColDrop(toIndex) {
+    const from = dragIndexRef.current;
+    dragIndexRef.current = null;
+    setDragId(null);
+    if (from === null || from === toIndex) return;
+    const next = [...cols];
+    const [moved] = next.splice(from, 1);
+    next.splice(toIndex, 0, moved);
+    setCols(next);
+    // Persist the full ordered id list; failure just leaves the old order on reload.
+    apiFetch(`${API_BASE}/api/schools/bookmarks/reorder`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: next.map(c => c._id) }),
+    }).catch(() => {});
+  }
+
+  // Reorder the schools (leads) inside the currently-open collection.
+  function handleSchoolDrop(toIndex) {
+    const from = schoolDragIndexRef.current;
+    schoolDragIndexRef.current = null;
+    setSchoolDragId(null);
+    if (from === null || from === toIndex || !selected) return;
+    const next = [...selected.schools];
+    const [moved] = next.splice(from, 1);
+    next.splice(toIndex, 0, moved);
+    setSelected(prev => ({ ...prev, schools: next }));
+    setCols(prev => prev.map(c => c._id === selected._id ? { ...c, schools: next } : c));
+    apiFetch(`${API_BASE}/api/schools/bookmarks/${selected._id}/schools/reorder`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schoolIds: next.map(s => s._id) }),
+    }).catch(() => {});
+  }
+
   // ── Search collection actions ──────────────────────────────
   async function createScCol() {
     if (!scNewName.trim()) return;
@@ -194,11 +232,21 @@ export default function Bookmarks() {
         </div>
         <div className={styles.list}>
           {selected.schools.length === 0 && <p className={styles.msg}>No schools in this collection.</p>}
-          {selected.schools.map(school => (
-            <div key={school._id} className={styles.card}>
+          {selected.schools.map((school, index) => (
+            <div
+              key={school._id}
+              className={styles.card}
+              draggable
+              onDragStart={() => { schoolDragIndexRef.current = index; setSchoolDragId(school._id); }}
+              onDragOver={e => e.preventDefault()}
+              onDrop={() => handleSchoolDrop(index)}
+              onDragEnd={() => { schoolDragIndexRef.current = null; setSchoolDragId(null); }}
+              style={{ cursor: 'grab', opacity: schoolDragId === school._id ? 0.4 : 1 }}
+              title="Drag to reorder"
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div draggable={false} style={{ position: 'relative', flexShrink: 0 }}>
                   <button aria-label={`Options for ${school.schoolName}`} onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                   {menuOpen === school._id && (
                     <div style={MENU_STYLE}>
@@ -304,13 +352,24 @@ export default function Bookmarks() {
                 ))
               : cols.length === 0
                 ? <p className={styles.msg}>No collections yet. Create one above!</p>
-                : cols.map(col => (
-                    <div key={col._id} className={styles.colCard} onClick={() => { setSelected(col); setSearchParams({ col: col._id }); }}>
+                : cols.map((col, index) => (
+                    <div
+                      key={col._id}
+                      className={styles.colCard}
+                      draggable
+                      onDragStart={() => { dragIndexRef.current = index; setDragId(col._id); }}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={() => handleColDrop(index)}
+                      onDragEnd={() => { dragIndexRef.current = null; setDragId(null); }}
+                      onClick={() => { setSelected(col); setSearchParams({ col: col._id }); }}
+                      style={{ cursor: 'grab', opacity: dragId === col._id ? 0.4 : 1 }}
+                      title="Drag to reorder"
+                    >
                       <div>
                         <p className={styles.colName}>{col.name}</p>
                         <p className={styles.colCount}>{col.schools.length} schools</p>
                       </div>
-                      <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                      <div draggable={false} style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button aria-label={`Options for ${col.name}`} onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                         {menuOpen === col._id && (
                           <div style={MENU_STYLE}>
