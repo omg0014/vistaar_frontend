@@ -61,6 +61,12 @@ export default function Bookmarks() {
       .catch(() => {});
   }, [apiFetch]);
 
+  // Sync with URL: when browser back removes ?col, go back to collections list
+  useEffect(() => {
+    if (!searchParams.get('col')) setSelected(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   async function toggleShareCol(col, broker) {
     const alreadyShared = (col.sharedWith || []).includes(broker.email);
     setSharing(broker.email);
@@ -92,7 +98,12 @@ export default function Bookmarks() {
         setCols(data);
         if (restoreId) {
           const col = data.find(c => c._id === restoreId);
-          if (col) setSelected(col);
+          if (col) {
+            setSelected(col);
+            // Push col into URL if it came from location.state (not already in URL)
+            // so browser back goes to /bookmarks list, not past it
+            if (!searchParams.get('col')) setSearchParams({ col: col._id });
+          }
         }
         checkDone();
       })
@@ -102,6 +113,7 @@ export default function Bookmarks() {
       .then(r => r.json())
       .then(d => { setScCols(d); checkDone(); })
       .catch(() => checkDone());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoreId, apiFetch]);
 
   // ── School collection actions ──────────────────────────────
@@ -187,7 +199,7 @@ export default function Bookmarks() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                  <button aria-label={`Options for ${school.schoolName}`} onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                   {menuOpen === school._id && (
                     <div style={MENU_STYLE}>
                       <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); removeSchool(selected._id, school._id, school.schoolName); }}>Remove from collection</button>
@@ -238,7 +250,7 @@ export default function Bookmarks() {
                     )}
                   </div>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <button onClick={e => toggleScSrchMenu(e, s._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                    <button aria-label={`Options for saved search "${s.q}"`} onClick={e => toggleScSrchMenu(e, s._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                     {scSrchMenu === s._id && (
                       <div style={MENU_STYLE}>
                         <button style={MENU_ITEM} onClick={() => { setScSrchMenu(null); removeSearch(scSelected._id, s._id); }}>Delete</button>
@@ -299,7 +311,7 @@ export default function Bookmarks() {
                         <p className={styles.colCount}>{col.schools.length} schools</p>
                       </div>
                       <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                        <button onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                        <button aria-label={`Options for ${col.name}`} onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                         {menuOpen === col._id && (
                           <div style={MENU_STYLE}>
                             <p style={{ padding: '10px 16px 6px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Share with broker</p>
@@ -362,7 +374,7 @@ export default function Bookmarks() {
                         <p className={styles.colCount}>{(col.searches || []).length} searches</p>
                       </div>
                       <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                        <button onClick={e => toggleScMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                        <button aria-label={`Options for ${col.name}`} onClick={e => toggleScMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                         {scMenuOpen === col._id && (
                           <div style={MENU_STYLE}>
                             {(col.searches || []).length === 0

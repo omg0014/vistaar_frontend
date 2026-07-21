@@ -5,6 +5,7 @@ import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
+import { calcEfficiency, efficiencyColor } from '../../utils/efficiency';
 
 const REGIONS = [
   { name: 'The West Coast',             short: 'TWC', centre: 'Gujarat',    states: ['RJ', 'GJ', 'MH', 'GA'],                    color: '#d97706' },
@@ -13,12 +14,6 @@ const REGIONS = [
   { name: 'The Real North',             short: 'TRN', centre: 'Chandigarh', states: ['JK', 'HR', 'PB', 'UK', 'HP'],              color: '#2563eb' },
   { name: 'Central Hindi Heartland',    short: 'CHH', centre: 'Varanasi',   states: ['BR', 'UP', 'Delhi-NCR', 'MP', 'CG', 'JK'], color: '#7c3aed' },
 ];
-
-function calcEfficiency(school) {
-  const capacity = (school.totalClassrooms || 0) * 35;
-  if (capacity === 0) return null;
-  return Math.round((school.totalStudents || 0) / capacity * 100);
-}
 
 export default function Search() {
   const navigate   = useNavigate();
@@ -203,7 +198,7 @@ export default function Search() {
                 ))
               : leads.map(school => {
                   const eff = calcEfficiency(school);
-                  const effColor = eff === null ? null : eff >= 75 ? '#16a34a' : eff >= 40 ? '#d97706' : '#dc2626';
+                  const effColor = efficiencyColor(eff);
                   return (
                     <div
                       key={school._id}
@@ -211,6 +206,7 @@ export default function Search() {
                     >
                       <button
                         className={styles.leadClose}
+                        aria-label={`Remove ${school.schoolName} from recent leads`}
                         onClick={async (e) => {
                           e.stopPropagation();
                           await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'DELETE' });

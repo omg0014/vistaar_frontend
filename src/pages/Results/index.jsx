@@ -6,24 +6,11 @@ import useAuthFetch from '../../hooks/useAuthFetch';
 import Filter from './Filter';
 import styles from './Results.module.css';
 import bmIcon from '../../assets/bookmark.png';
+import { calcEfficiency } from '../../utils/efficiency';
+import EfficiencyBadge from '../../components/EfficiencyBadge';
+import BookmarkMenu from '../../components/BookmarkMenu';
 
 const LIMIT = 10;
-
-function calcEfficiency(school) {
-  const capacity = (school.totalClassrooms || 0) * 35;
-  if (capacity === 0) return null;
-  return Math.round((school.totalStudents || 0) / capacity * 100);
-}
-
-function EfficiencyBadge({ value }) {
-  if (value === null) return null;
-  const color = value >= 75 ? '#16a34a' : value >= 40 ? '#d97706' : '#dc2626';
-  return (
-    <span className={styles.badge} style={{ background: color + '20', color }}>
-      {value}% efficiency
-    </span>
-  );
-}
 
 function buildBody(type, q, page, filterParams) {
   return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, q, page, limit: LIMIT, ...filterParams }) };
@@ -57,9 +44,6 @@ export default function Results() {
   const [loading,     setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error,       setError]       = useState('');
-  const [bmOpen,      setBmOpen]      = useState(null);
-  const [bmCols,      setBmCols]      = useState([]);
-  const [bmNewCol,    setBmNewCol]    = useState('');
   const [saveOpen,    setSaveOpen]    = useState(false);
   const [scCols,      setScCols]      = useState([]);
   const [scNewCol,    setScNewCol]    = useState('');
@@ -166,7 +150,6 @@ export default function Results() {
       apiFetch(`${API_BASE}/api/schools/search-collections/list`, { method: 'POST' }).then(r => r.json()).then(setScCols).catch(() => {});
     }
     setSaveOpen(p => !p);
-    setBmOpen(null);
   }
 
   async function toggleScCol(col) {
@@ -201,31 +184,6 @@ export default function Results() {
     setSaveOpen(false);
   }
 
-  function openBm(schoolId) {
-    if (bmCols.length === 0) {
-      apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
-    }
-    setBmOpen(prev => prev === schoolId ? null : schoolId);
-  }
-
-  async function toggleBm(col, school) {
-    const inCol = col.schools.some(s => s._id === school._id);
-    if (inCol) {
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools/${school._id}`, { method: 'DELETE' });
-    } else {
-      const s = { _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state, totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms };
-      await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }) });
-    }
-    apiFetch(`${API_BASE}/api/schools/bookmarks/list`, { method: 'POST' }).then(r => r.json()).then(setBmCols).catch(() => {});
-  }
-
-  async function createBmCol() {
-    if (!bmNewCol.trim()) return;
-    const col = await apiFetch(`${API_BASE}/api/schools/bookmarks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: bmNewCol.trim() }) }).then(r => r.json());
-    setBmNewCol('');
-    setBmCols(prev => [...prev, col]);
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
@@ -242,7 +200,7 @@ export default function Results() {
           </span>
         )}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button title="Save Search" onClick={openSaveSearch} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: saveOpen ? 1 : 0.55 }}><img src={bmIcon} alt="save search" style={{ width: 18, height: 18, display: 'block' }} /></button>
+          <button aria-label="Save this search" title="Save Search" onClick={openSaveSearch} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: saveOpen ? 1 : 0.55 }}><img src={bmIcon} alt="" style={{ width: 18, height: 18, display: 'block' }} /></button>
           {saveOpen && (
             <>
               <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setSaveOpen(false)} />
@@ -304,33 +262,14 @@ export default function Results() {
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {school._source && <span className={styles.region}>{school._source}</span>}
-                  <div style={{ position: 'relative' }}>
-                    <button title="Bookmark" onClick={() => openBm(school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: bmOpen === school._id ? 1 : 0.55 }}><img src={bmIcon} alt="bookmark" style={{ width: 18, height: 18, display: 'block' }} /></button>
-                    {bmOpen === school._id && (
-                      <>
-                        <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setBmOpen(null)} />
-                        <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                          <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Add to Collection</p>
-                          {bmCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No collections yet</p>}
-                          {bmCols.map(col => {
-                            const inCol = col.schools.some(s => s._id === school._id);
-                            return (
-                              <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({col.schools.length})</span></span>
-                                <button onClick={() => toggleBm(col, school)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
-                                  {inCol ? 'Remove' : '+ Add'}
-                                </button>
-                              </div>
-                            );
-                          })}
-                          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                            <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={bmNewCol} onChange={e => setBmNewCol(e.target.value)} onKeyDown={e => e.key === 'Enter' && createBmCol()} />
-                            <button onClick={createBmCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
-                          </div>
-                        </div>
-                      </>
+                  <BookmarkMenu
+                    school={school}
+                    trigger={({ onClick, open }) => (
+                      <button aria-label="Bookmark this school" title="Bookmark" onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: open ? 1 : 0.55 }}>
+                        <img src={bmIcon} alt="" style={{ width: 18, height: 18, display: 'block' }} />
+                      </button>
                     )}
-                  </div>
+                  />
                 </div>
               </div>
 
@@ -346,7 +285,7 @@ export default function Results() {
                 {school.totalTeachers != null && (
                   <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
                 )}
-                <EfficiencyBadge value={eff} />
+                <EfficiencyBadge value={eff} className={styles.badge} />
               </div>
 
               <div className={styles.cardBottom}>
