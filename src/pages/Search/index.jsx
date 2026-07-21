@@ -35,6 +35,7 @@ export default function Search() {
   const { user, logout } = useAuth();
   const [type, setType]             = useState('schoolName');
   const [q, setQ]                   = useState('');
+  const [tags, setTags]             = useState([]); // City/State: multiple OR'd entities
   const [leads, setLeads]           = useState([]);
   const [leadsLoading, setLeadsLoading] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
@@ -84,7 +85,24 @@ export default function Search() {
     return () => clearTimeout(timer);
   }, [q, type, apiFetch]);
 
+  function addTag() {
+    const v = q.trim();
+    if (!v) return;
+    setTags(prev => prev.some(t => t.toLowerCase() === v.toLowerCase()) ? prev : [...prev, v]);
+    setQ('');
+  }
+
   function handleSearch() {
+    if (type === 'cityState') {
+      const all = [...tags];
+      const pending = q.trim();
+      if (pending && !all.some(t => t.toLowerCase() === pending.toLowerCase())) all.push(pending);
+      if (all.length === 0) return;
+      setSuggestions([]);
+      setShowSuggestions(false);
+      navigate(`/results?type=cityState&q=${encodeURIComponent(all.join(','))}&page=1`);
+      return;
+    }
     if (!q.trim()) return;
     setSuggestions([]);
     setShowSuggestions(false);
@@ -92,6 +110,19 @@ export default function Search() {
   }
 
   function handleKeyDown(e) {
+    if (type === 'cityState') {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (q.trim()) addTag();   // add the typed entity as a chip
+        else handleSearch();      // Enter on empty field → run the search
+      } else if (e.key === ',') {
+        e.preventDefault();
+        addTag();
+      } else if (e.key === 'Backspace' && !q && tags.length) {
+        setTags(prev => prev.slice(0, -1));
+      }
+      return;
+    }
     if (e.key === 'Enter') handleSearch();
     if (e.key === 'Escape') setShowSuggestions(false);
   }
@@ -140,24 +171,49 @@ export default function Search() {
 
         <div className={styles.form}>
           <div className={styles.formInner}>
-            <select className={styles.select} value={type} onChange={e => { setType(e.target.value); setSuggestions([]); }}>
+            <select className={styles.select} value={type} onChange={e => { setType(e.target.value); setSuggestions([]); setTags([]); setQ(''); }}>
               {SEARCH_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
             <div className={styles.divider} />
-            <input
-              className={styles.input}
-              type="text"
-              placeholder={`Search by ${currentLabel}...`}
-              value={q}
-              onChange={e => { setQ(e.target.value); setShowSuggestions(true); }}
-              onKeyDown={handleKeyDown}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              autoComplete="off"
-            />
-            <button className={styles.btn} onClick={handleSearch}>Search</button>
+            {type === 'cityState' ? (
+              <div className={styles.field}>
+                {tags.map((t, i) => (
+                  <span key={t} className={styles.chip}>
+                    {t}
+                    <button type="button" className={styles.chipX} aria-label={`Remove ${t}`} onClick={() => setTags(prev => prev.filter((_, j) => j !== i))}>×</button>
+                  </span>
+                ))}
+                <input
+                  className={styles.fieldInput}
+                  type="text"
+                  placeholder={tags.length ? 'Add another…' : 'Type a city or state, Enter to add…'}
+                  value={q}
+                  onChange={e => setQ(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  autoComplete="off"
+                />
+              </div>
+            ) : (
+              <input
+                className={styles.input}
+                type="text"
+                placeholder={`Search by ${currentLabel}...`}
+                value={q}
+                onChange={e => { setQ(e.target.value); setShowSuggestions(true); }}
+                onKeyDown={handleKeyDown}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                autoComplete="off"
+              />
+            )}
+            <button className={styles.iconBtn} onClick={handleSearch} aria-label="Search">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+            </button>
           </div>
           {showSuggestions && suggestions.length > 0 && (
             <div className={styles.suggestions}>
