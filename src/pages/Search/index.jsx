@@ -155,7 +155,7 @@ export default function Search() {
       <div
         className={styles.hero}
         style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${process.env.PUBLIC_URL}/image.png)`,
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${process.env.PUBLIC_URL}/image.jpeg)`,
         }}
       >
         <h1 className={styles.title}>Vistaar</h1>
