@@ -7,12 +7,25 @@ import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
 import { calcEfficiency, efficiencyColor } from '../../utils/efficiency';
 
+// states carry both the mobile short code and the desktop full name; the full
+// name lives per-region because the same code can differ by region (e.g. JK is
+// Jammu & Kashmir in the North but Jharkhand in the Central Heartland).
 const REGIONS = [
-  { name: 'The West Coast',             short: 'TWC', centre: 'Gujarat',    states: ['RJ', 'GJ', 'MH', 'GA'],                    color: '#d97706' },
-  { name: 'Eastern Marwadi Stronghold', short: 'EMS', centre: 'Kolkata',    states: ['WB', 'OD', 'AS'],                          color: '#dc2626' },
-  { name: 'The South Fifer',            short: 'TSF', centre: 'Bangalore',  states: ['KA', 'AP', 'TS', 'TN', 'KL'],              color: '#16a34a' },
-  { name: 'The Real North',             short: 'TRN', centre: 'Chandigarh', states: ['JK', 'HR', 'PB', 'UK', 'HP'],              color: '#2563eb' },
-  { name: 'Central Hindi Heartland',    short: 'CHH', centre: 'Varanasi',   states: ['BR', 'UP', 'Delhi-NCR', 'MP', 'CG', 'JK'], color: '#7c3aed' },
+  { name: 'The West Coast', short: 'TWC', centre: 'Gujarat', color: '#d97706', states: [
+    { code: 'RJ', name: 'Rajasthan' }, { code: 'GJ', name: 'Gujarat' }, { code: 'MH', name: 'Maharashtra' }, { code: 'GA', name: 'Goa' },
+  ] },
+  { name: 'Eastern Marwadi Stronghold', short: 'EMS', centre: 'Kolkata', color: '#dc2626', states: [
+    { code: 'WB', name: 'West Bengal' }, { code: 'OD', name: 'Odisha' }, { code: 'AS', name: 'Assam' },
+  ] },
+  { name: 'The South Fifer', short: 'TSF', centre: 'Bangalore', color: '#16a34a', states: [
+    { code: 'KA', name: 'Karnataka' }, { code: 'AP', name: 'Andhra Pradesh' }, { code: 'TS', name: 'Telangana' }, { code: 'TN', name: 'Tamil Nadu' }, { code: 'KL', name: 'Kerala' },
+  ] },
+  { name: 'The Real North', short: 'TRN', centre: 'Chandigarh', color: '#2563eb', states: [
+    { code: 'JK', name: 'Jammu & Kashmir' }, { code: 'HR', name: 'Haryana' }, { code: 'PB', name: 'Punjab' }, { code: 'UK', name: 'Uttarakhand' }, { code: 'HP', name: 'Himachal Pradesh' },
+  ] },
+  { name: 'Central Hindi Heartland', short: 'CHH', centre: 'Varanasi', color: '#7c3aed', states: [
+    { code: 'BR', name: 'Bihar' }, { code: 'UP', name: 'Uttar Pradesh' }, { code: 'Delhi-NCR', name: 'Delhi-NCR' }, { code: 'MP', name: 'Madhya Pradesh' }, { code: 'CG', name: 'Chhattisgarh' }, { code: 'JK', name: 'Jharkhand' },
+  ] },
 ];
 
 export default function Search() {
@@ -108,7 +121,12 @@ export default function Search() {
           </div>
         )}
       </div>
-      <div className={styles.hero}>
+      <div
+        className={styles.hero}
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${process.env.PUBLIC_URL}/image.png)`,
+        }}
+      >
         <h1 className={styles.title}>Vistaar</h1>
         <div className={styles.subtitleWrap}>
           <p className={styles.subtitle}>
@@ -177,7 +195,10 @@ export default function Search() {
             <p className={styles.regionCentre}>⬡ {r.centre}</p>
             <div className={styles.regionStates}>
               {r.states.map(s => (
-                <span key={s} className={styles.regionState}>{s}</span>
+                <span key={s.code} className={styles.regionState}>
+                  <span className={styles.stAbbr}>{s.code}</span>
+                  <span className={styles.stFull}>{s.name}</span>
+                </span>
               ))}
             </div>
           </div>
