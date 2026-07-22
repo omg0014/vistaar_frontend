@@ -237,6 +237,9 @@ export default function AdminPanel() {
     ? brokers.filter(b => (b.name || '').toLowerCase().includes(q) || (b.email || '').toLowerCase().includes(q))
     : brokers;
 
+  // Stats reflect the current (filtered) list; brokers are newest-first, so [0] is latest.
+  const latestBroker = visibleBrokers[0]?.name || '—';
+
   return (
     <div className={styles.page}>
       <SearchHeader
@@ -258,22 +261,30 @@ export default function AdminPanel() {
         secondValue={newEmail}
         onSecondChange={setNewEmail}
         secondPlaceholder={mode === 'create' ? 'Google account email' : undefined}
-      />
+      >
+        <div className={styles.stats}>
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{visibleBrokers.length}</span>
+            <span className={styles.statLabel}>Brokers</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statName} title={latestBroker}>{latestBroker}</span>
+            <span className={styles.statLabel}>Recently Created</span>
+          </div>
+        </div>
+      </SearchHeader>
 
       <main className={styles.main}>
-        <div className={styles.pageTitle}>
-          <h1 className={styles.title}>Broker Management</h1>
-          <p className={styles.subtitle}>
-            {mode === 'create'
-              ? 'Enter a name and Google email above, then + to add a broker.'
-              : 'Search brokers by name or email, or switch to Create to add one.'}
-          </p>
-          {error && <p className={styles.error}>{error}</p>}
-          {mode === 'create' && adding && <p className={styles.hint}>Adding…</p>}
-        </div>
+        {(error || (mode === 'create' && adding)) && (
+          <div className={styles.pageTitle}>
+            {error && <p className={styles.error}>{error}</p>}
+            {mode === 'create' && adding && <p className={styles.hint}>Adding…</p>}
+          </div>
+        )}
 
         <div className={styles.listSection}>
-          <h2 className={styles.listTitle}>Brokers ({brokers.length}){filtering ? ` · ${visibleBrokers.length} matching` : ''}</h2>
+          <h2 className={styles.listTitle}>Brokers</h2>
           {loading ? (
             <div className={styles.brokerList}>
               {[...Array(3)].map((_, i) => (

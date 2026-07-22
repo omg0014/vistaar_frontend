@@ -148,6 +148,10 @@ export default function SavedSearches() {
     ? scCols.filter(c => c.name.toLowerCase().includes(appliedQuery.trim().toLowerCase()))
     : scCols;
 
+  // Stats reflect the current (filtered) list — visible === scCols when no filter is applied.
+  const totalSearches = visible.reduce((s, c) => s + (c.searches?.length || 0), 0);
+  const topCol        = visible.reduce((m, c) => Math.max(m, c.searches?.length || 0), 0);
+
   // ── Saved-search collections list ──────────────────────────
   return (
     <div className={styles.pageWrap}>
@@ -167,7 +171,24 @@ export default function SavedSearches() {
         onSubmit={submitHeader}
         placeholder={mode === 'search' ? 'Search your saved-search collections…' : 'New search collection name, then +'}
         icon={mode === 'create' ? 'plus' : 'search'}
-      />
+      >
+        <div className={styles.stats}>
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{visible.length}</span>
+            <span className={styles.statLabel}>Collections</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{totalSearches}</span>
+            <span className={styles.statLabel}>Saved Searches</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{topCol}</span>
+            <span className={styles.statLabel}>Top Collection</span>
+          </div>
+        </div>
+      </SearchHeader>
 
       <div className={styles.page}>
         {scMenuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setScMenuOpen(null)} />}
