@@ -6,8 +6,7 @@ import useAuthFetch from '../../hooks/useAuthFetch';
 import useScrollReveal from '../../hooks/useScrollReveal';
 import Filter from './Filter';
 import styles from './Results.module.css';
-import { calcEfficiency } from '../../utils/efficiency';
-import EfficiencyBadge from '../../components/EfficiencyBadge';
+import LeadCard from '../../components/LeadCard';
 import CardActionsMenu from '../../components/CardActionsMenu';
 import SearchHeader from '../../components/SearchHeader';
 import HeaderMenu from '../../components/HeaderMenu';
@@ -271,60 +270,25 @@ export default function Results() {
           <p className={styles.msg}>No schools found.</p>
         )}
 
-        {results.map((school, i) => {
-          const eff = calcEfficiency(school);
-          return (
-            <div
-              key={school._id}
-              ref={reveal}
-              className={`${styles.card} reveal`}
-              style={{ animationDelay: `${(i % LIMIT) * 45}ms` }}
-            >
-              <div className={styles.cardTop}>
-                <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {school._source && <span className={styles.region}>{school._source}</span>}
-                  <CardActionsMenu school={school} />
-                </div>
-              </div>
-
-              <p className={styles.address}>{school.address}</p>
-              <p className={styles.location}>
-                {[school.district, school.state].filter(Boolean).join(', ')}
-              </p>
-
-              <div className={styles.cardMeta}>
-                {school.totalStudents != null && (
-                  <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>
-                )}
-                {school.totalTeachers != null && (
-                  <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
-                )}
-                <EfficiencyBadge value={eff} className={styles.badge} />
-              </div>
-
-              <div className={styles.cardBottom}>
-                {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.viewBtn}
-                    onClick={async () => {
-                      try {
-                        sessionStorage.setItem(scrollKey, window.scrollY);
-                        sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore, filterParams }));
-                      } catch {}
-                      await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
-                      const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
-                      navigate(`/school/${school._id}${colPart}`, { state: { fromResults: true } });
-                    }}
-                  >
-                    View Report Card →
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {results.map((school, i) => (
+          <LeadCard
+            key={school._id}
+            ref={reveal}
+            className="reveal"
+            style={{ animationDelay: `${(i % LIMIT) * 45}ms` }}
+            school={school}
+            menu={<CardActionsMenu school={school} />}
+            onView={async () => {
+              try {
+                sessionStorage.setItem(scrollKey, window.scrollY);
+                sessionStorage.setItem(cacheKey, JSON.stringify({ results, total, page, hasMore, filterParams }));
+              } catch {}
+              await apiFetch(`${API_BASE}/api/schools/${school._id}/lead`, { method: 'PATCH' });
+              const colPart = school._source ? `?col=${encodeURIComponent(school._source)}` : '';
+              navigate(`/school/${school._id}${colPart}`, { state: { fromResults: true } });
+            }}
+          />
+        ))}
 
         {loadingMore && <p className={styles.msg}>Loading more...</p>}
         {!loading && hasMore && <div ref={sentinelRef} style={{ height: 20, gridColumn: '1 / -1' }} />}

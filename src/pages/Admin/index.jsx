@@ -36,6 +36,11 @@ export default function AdminPanel() {
   const [menuOpen,          setMenuOpen]          = useState(null); // collection._id
   const menuRefs                                    = useRef({});
 
+  // Broker-detail: search shared collections
+  const [colQuery,   setColQuery]   = useState('');
+  const [colApplied, setColApplied] = useState('');
+  useEffect(() => { setColQuery(''); setColApplied(''); }, [selectedBroker?._id]);
+
   // Close 3-dot menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -124,6 +129,12 @@ export default function AdminPanel() {
 
   /* ── Broker detail view ── */
   if (selectedBroker) {
+    const applied = colApplied.trim().toLowerCase();
+    const colFiltering = applied !== '';
+    const detailCols = colFiltering
+      ? brokerCols.filter(c => (c.name || '').toLowerCase().includes(applied))
+      : brokerCols;
+
     return (
       <div className={styles.page}>
         <SearchHeader
@@ -133,7 +144,30 @@ export default function AdminPanel() {
           onBack={() => setSelectedBroker(null)}
           backLabel="← Back to Brokers"
           rightSlot={<HeaderMenu />}
-        />
+          value={colQuery}
+          onChange={setColQuery}
+          onKeyDown={e => { if (e.key === 'Enter') setColApplied(colQuery.trim()); }}
+          onSubmit={() => setColApplied(colQuery.trim())}
+          placeholder="Search shared collections…"
+          icon="search"
+        >
+          <div className={styles.stats}>
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{brokerCols.length}</span>
+              <span className={styles.statLabel}>Collections</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statName} title={selectedBroker.name}>{selectedBroker.name}</span>
+              <span className={styles.statLabel}>Broker</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{detailCols.length}</span>
+              <span className={styles.statLabel}>FILTERED</span>
+            </div>
+          </div>
+        </SearchHeader>
         <main className={styles.main}>
           <div className={styles.detailTopBar}>
             <div className={styles.detailBrokerInfo}>
@@ -174,9 +208,15 @@ export default function AdminPanel() {
             </div>
           )}
 
-          {!brokerColsLoading && brokerCols.length > 0 && (
+          {!brokerColsLoading && brokerCols.length > 0 && detailCols.length === 0 && (
+            <div className={styles.emptyLeads}>
+              <p className={styles.emptyLeadsTitle}>No collections match “{colApplied}”</p>
+            </div>
+          )}
+
+          {!brokerColsLoading && detailCols.length > 0 && (
             <div className={styles.cardList}>
-              {brokerCols.map(col => (
+              {detailCols.map(col => (
                 <div key={col._id} className={styles.card} style={{ position: 'relative' }}>
                   <div
                     ref={el => { menuRefs.current[col._id] = el; }}

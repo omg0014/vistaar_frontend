@@ -46,6 +46,11 @@ export default function SavedSearches() {
   const [query,        setQuery]        = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
 
+  // In-collection search (detail view)
+  const [srchQuery,   setSrchQuery]   = useState('');
+  const [srchApplied, setSrchApplied] = useState('');
+  useEffect(() => { setSrchQuery(''); setSrchApplied(''); }, [scSelected?._id]);
+
   useEffect(() => {
     apiFetch(`${API_BASE}/api/schools/search-collections/list`, { method: 'POST' })
       .then(r => r.json())
@@ -98,17 +103,52 @@ export default function SavedSearches() {
 
   // ── Saved-search detail view ───────────────────────────────
   if (scSelected) {
+    const allSearches = scSelected.searches || [];
+    const applied = srchApplied.trim().toLowerCase();
+    const srchFiltering = applied !== '';
+    const detailSearches = srchFiltering
+      ? allSearches.filter(s => (s.q || '').toLowerCase().includes(applied) || (TYPE_LABELS[s.type] || s.type || '').toLowerCase().includes(applied))
+      : allSearches;
+
     return (
-      <div className={styles.page}>
-        {scSrchMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setScSrchMenu(null)} />}
-        <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => setScSelected(null)}>← Saved Searches</button>
-          <span className={styles.title}>{scSelected.name}</span>
-          <span className={styles.count}>{(scSelected.searches || []).length} searches</span>
-        </div>
-        <div className={styles.list}>
-          {(scSelected.searches || []).length === 0 && <p className={styles.msg}>No searches in this collection.</p>}
-          {(scSelected.searches || []).map(s => {
+      <div className={styles.pageWrap}>
+        <SearchHeader
+          title="Vistaar"
+          subtitle={SUBTITLE}
+          tooltip={SUBTITLE_EN}
+          onBack={() => setScSelected(null)}
+          backLabel="← Saved Searches"
+          rightSlot={<HeaderMenu />}
+          value={srchQuery}
+          onChange={setSrchQuery}
+          onKeyDown={e => { if (e.key === 'Enter') setSrchApplied(srchQuery.trim()); }}
+          onSubmit={() => setSrchApplied(srchQuery.trim())}
+          placeholder="Search saved searches in this collection…"
+          icon="search"
+        >
+          <div className={styles.stats}>
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{allSearches.length}</span>
+              <span className={styles.statLabel}>Searches</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statName} title={scSelected.name}>{scSelected.name}</span>
+              <span className={styles.statLabel}>Collection</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{detailSearches.length}</span>
+              <span className={styles.statLabel}>FILTERED</span>
+            </div>
+          </div>
+        </SearchHeader>
+
+        <div className={styles.page}>
+          {scSrchMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setScSrchMenu(null)} />}
+          <div className={styles.list}>
+            {detailSearches.length === 0 && <p className={styles.msg}>{srchFiltering ? `No searches match “${srchApplied}”.` : 'No searches in this collection.'}</p>}
+            {detailSearches.map(s => {
             const tags = filterTags(s.filters);
             return (
               <div key={s._id} className={styles.card}>
@@ -138,6 +178,7 @@ export default function SavedSearches() {
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     );

@@ -2,8 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import SearchHeader from '../../components/SearchHeader';
 import HeaderMenu from '../../components/HeaderMenu';
+import LeadCard from '../../components/LeadCard';
 import styles from './Bookmarks.module.css';
 
 const MENU_STYLE = { position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 180, overflow: 'hidden' };
@@ -18,6 +20,7 @@ export default function Bookmarks() {
   const location      = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const apiFetch      = useAuthFetch();
+  const reveal        = useScrollReveal();
   // restoreId from either URL param (refresh-safe) or navigation state (back from SchoolDetail)
   const restoreId     = searchParams.get('col') || location.state?.restoreCollection;
 
@@ -36,6 +39,11 @@ export default function Bookmarks() {
   const [mode,         setMode]         = useState('search');
   const [query,        setQuery]        = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
+
+  // In-collection school search (detail view)
+  const [schoolQuery,   setSchoolQuery]   = useState('');
+  const [schoolApplied, setSchoolApplied] = useState('');
+  useEffect(() => { setSchoolQuery(''); setSchoolApplied(''); }, [selected?._id]);
 
   // Broker sharing (collections are shared with brokers as a whole)
   const [brokers,      setBrokers]      = useState([]);
@@ -165,54 +173,79 @@ export default function Bookmarks() {
 
   function toggleMenu(e, id) { e.stopPropagation(); setMenuOpen(prev => prev === id ? null : id); }
 
-  // ── School collection detail view ──────────────────────────
+  // ── School collection detail view ("All Leads" in a collection) ─────
   if (selected) {
+    const applied = schoolApplied.trim().toLowerCase();
+    const schoolFiltering = applied !== '';
+    const detailSchools = schoolFiltering
+      ? selected.schools.filter(s => (s.schoolName || '').toLowerCase().includes(applied))
+      : selected.schools;
+
     return (
-      <div className={styles.page}>
-        {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
-        <div className={styles.topBar}>
-          {selected.schools.length === 0
-            ? <button className={styles.backBtn} onClick={() => navigate('/')}>← Back to Search</button>
-            : <button className={styles.backBtn} onClick={() => { setSelected(null); setSearchParams({}); }}>← Collections</button>
-          }
-          <span className={styles.title}>{selected.name}</span>
-          <span className={styles.count}>{selected.schools.length} schools</span>
-        </div>
-        <div className={styles.list}>
-          {selected.schools.length === 0 && <p className={styles.msg}>No schools in this collection.</p>}
-          {selected.schools.map((school, index) => (
-            <div
-              key={school._id}
-              className={styles.card}
-              draggable
-              onDragStart={() => { schoolDragIndexRef.current = index; setSchoolDragId(school._id); }}
-              onDragOver={e => e.preventDefault()}
-              onDrop={() => handleSchoolDrop(index)}
-              onDragEnd={() => { schoolDragIndexRef.current = null; setSchoolDragId(null); }}
-              style={{ cursor: 'grab', opacity: schoolDragId === school._id ? 0.4 : 1 }}
-              title="Drag to reorder"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                <div draggable={false} style={{ position: 'relative', flexShrink: 0 }}>
-                  <button aria-label={`Options for ${school.schoolName}`} onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
-                  {menuOpen === school._id && (
-                    <div style={MENU_STYLE}>
-                      <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); removeSchool(selected._id, school._id, school.schoolName); }}>Remove from collection</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p className={styles.location}>{[school.district, school.state].filter(Boolean).join(', ')}</p>
-              <div className={styles.cardMeta}>
-                {school.totalStudents != null && <span>🎓 {school.totalStudents} students</span>}
-                {school.totalTeachers != null && <span>👩‍🏫 {school.totalTeachers} teachers</span>}
-              </div>
-              <div className={styles.cardBottom}>
-                <button className={styles.viewBtn} onClick={() => navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } })}>View Report Card →</button>
-              </div>
+      <div className={styles.pageWrap}>
+        <SearchHeader
+          title="Vistaar"
+          subtitle={SUBTITLE}
+          tooltip={SUBTITLE_EN}
+          onBack={() => { setSelected(null); setSearchParams({}); }}
+          backLabel="← Collections"
+          rightSlot={<HeaderMenu />}
+          value={schoolQuery}
+          onChange={setSchoolQuery}
+          onKeyDown={e => { if (e.key === 'Enter') setSchoolApplied(schoolQuery.trim()); }}
+          onSubmit={() => setSchoolApplied(schoolQuery.trim())}
+          placeholder="Search schools in this collection…"
+          icon="search"
+        >
+          <div className={styles.stats}>
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{selected.schools.length}</span>
+              <span className={styles.statLabel}>Schools</span>
             </div>
-          ))}
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statName} title={selected.name}>{selected.name}</span>
+              <span className={styles.statLabel}>Collection</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{detailSchools.length}</span>
+              <span className={styles.statLabel}>FILTERED</span>
+            </div>
+          </div>
+        </SearchHeader>
+
+        {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
+        <div className={styles.leadsList}>
+            {detailSchools.length === 0 && (
+              <p className={styles.msg}>{schoolFiltering ? `No schools match “${schoolApplied}”.` : 'No schools in this collection.'}</p>
+            )}
+            {detailSchools.map((school, index) => (
+              <LeadCard
+                key={school._id}
+                ref={reveal}
+                className="reveal"
+                school={school}
+                draggable={!schoolFiltering}
+                onDragStart={() => { schoolDragIndexRef.current = index; setSchoolDragId(school._id); }}
+                onDragOver={e => e.preventDefault()}
+                onDrop={() => handleSchoolDrop(index)}
+                onDragEnd={() => { schoolDragIndexRef.current = null; setSchoolDragId(null); }}
+                style={{ cursor: schoolFiltering ? 'default' : 'grab', opacity: schoolDragId === school._id ? 0.4 : 1, animationDelay: `${(index % 12) * 45}ms` }}
+                title={schoolFiltering ? undefined : 'Drag to reorder'}
+                onView={() => navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } })}
+                menu={
+                  <div draggable={false} style={{ position: 'relative' }}>
+                    <button aria-label={`Options for ${school.schoolName}`} onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
+                    {menuOpen === school._id && (
+                      <div style={MENU_STYLE}>
+                        <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); removeSchool(selected._id, school._id, school.schoolName); }}>Remove from collection</button>
+                      </div>
+                    )}
+                  </div>
+                }
+              />
+            ))}
         </div>
       </div>
     );
