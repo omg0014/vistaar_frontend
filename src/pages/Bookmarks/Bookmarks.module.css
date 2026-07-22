@@ -1,3 +1,4 @@
+.pageWrap { width: 100%; min-height: 100vh; background: #f8fafc; }
 .page { max-width: 800px; margin: 0 auto; padding: 28px 20px; }
 
 .topBar {

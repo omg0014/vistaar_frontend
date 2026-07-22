@@ -145,6 +145,7 @@ export default function Search() {
           <div className={styles.hamburgerMenu}>
             <p className={styles.hamburgerName}>{user?.name}</p>
             <button onClick={() => { setHamburgerOpen(false); navigate('/bookmarks'); }} className={styles.hamburgerItem}>Bookmarks</button>
+            <button onClick={() => { setHamburgerOpen(false); navigate('/saved-searches'); }} className={styles.hamburgerItem}>Saved Searches</button>
             {user?.role === 'admin' && (
               <button onClick={() => { setHamburgerOpen(false); navigate('/admin'); }} className={styles.hamburgerItem}>Brokers</button>
             )}
