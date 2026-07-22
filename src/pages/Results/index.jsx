@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import { TYPE_LABELS } from '../../constants/searchTypes';
 import useAuthFetch from '../../hooks/useAuthFetch';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import Filter from './Filter';
 import styles from './Results.module.css';
 import { calcEfficiency } from '../../utils/efficiency';
@@ -23,6 +24,7 @@ export default function Results() {
   const [params]   = useSearchParams();
   const navigate   = useNavigate();
   const apiFetch   = useAuthFetch();
+  const reveal     = useScrollReveal();
   const type       = params.get('type') || 'schoolName';
   const q          = params.get('q') || '';
   const cacheKey   = `rc_${type}_${q}`;
@@ -269,10 +271,15 @@ export default function Results() {
           <p className={styles.msg}>No schools found.</p>
         )}
 
-        {results.map(school => {
+        {results.map((school, i) => {
           const eff = calcEfficiency(school);
           return (
-            <div key={school._id} className={styles.card}>
+            <div
+              key={school._id}
+              ref={reveal}
+              className={`${styles.card} reveal`}
+              style={{ animationDelay: `${(i % LIMIT) * 45}ms` }}
+            >
               <div className={styles.cardTop}>
                 <h2 className={styles.schoolName}>{school.schoolName}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

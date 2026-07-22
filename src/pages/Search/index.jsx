@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { SEARCH_TYPES } from '../../constants/searchTypes';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Search.module.css';
 import { calcEfficiency, efficiencyColor } from '../../utils/efficiency';
@@ -32,6 +33,7 @@ export default function Search() {
   const navigate   = useNavigate();
   const location   = useLocation();
   const apiFetch   = useAuthFetch();
+  const reveal     = useScrollReveal();
   const { user, logout } = useAuth();
   const [type, setType]             = useState('schoolName');
   const [q, setQ]                   = useState('');
@@ -245,21 +247,28 @@ export default function Search() {
         </div>
       </div>
 
-      <div className={styles.regions}>
-        {REGIONS.map(r => (
-          <div key={r.short} className={styles.regionCard} style={{ '--region-color': r.color }}>
-            <p className={styles.regionName}>{r.name}</p>
-            <p className={styles.regionCentre}>⬡ {r.centre}</p>
-            <div className={styles.regionStates}>
-              {r.states.map(s => (
-                <span key={s.code} className={styles.regionState}>
-                  <span className={styles.stAbbr}>{s.code}</span>
-                  <span className={styles.stFull}>{s.name}</span>
-                </span>
-              ))}
+      <div className={styles.marquee}>
+        <div className={styles.marqueeTrack}>
+          {[...REGIONS, ...REGIONS].map((r, i) => (
+            <div
+              key={`${r.short}-${i}`}
+              className={styles.regionCard}
+              style={{ '--region-color': r.color }}
+              aria-hidden={i >= REGIONS.length}
+            >
+              <p className={styles.regionName}>{r.name}</p>
+              <p className={styles.regionCentre}>⬡ {r.centre}</p>
+              <div className={styles.regionStates}>
+                {r.states.map(s => (
+                  <span key={s.code} className={styles.regionState}>
+                    <span className={styles.stAbbr}>{s.code}</span>
+                    <span className={styles.stFull}>{s.name}</span>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {(leadsLoading || leads.length > 0) && (
@@ -274,13 +283,15 @@ export default function Search() {
                     <div className={styles.skel} style={{ height: 10, width: '40%' }} />
                   </div>
                 ))
-              : leads.map(school => {
+              : leads.map((school, i) => {
                   const eff = calcEfficiency(school);
                   const effColor = efficiencyColor(eff);
                   return (
                     <div
                       key={school._id}
-                      className={styles.leadCard}
+                      ref={reveal}
+                      className={`${styles.leadCard} reveal`}
+                      style={{ animationDelay: `${i * 50}ms` }}
                     >
                       <button
                         className={styles.leadClose}
