@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import useBookmarkCollections from '../hooks/useBookmarkCollections';
 
 const rootItem = {
@@ -12,9 +12,21 @@ const rootItem = {
 export default function CardActionsMenu({ school }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('root'); // 'root' | 'bookmark'
+  const wrapRef = useRef(null);
   const { cols, newName, setNewName, refresh, toggle, createCol } = useBookmarkCollections(school);
 
   function close() { setOpen(false); setView('root'); }
+
+  // Close on outside click (avoids a position:fixed overlay, which would break
+  // if an ancestor card uses a hover transform).
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) close();
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [open]);
 
   function toggleOpen(e) {
     e.stopPropagation();
@@ -39,7 +51,7 @@ export default function CardActionsMenu({ school }) {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} ref={wrapRef}>
       <button
         aria-label="School options"
         title="Options"
@@ -49,8 +61,6 @@ export default function CardActionsMenu({ school }) {
         ⋯
       </button>
       {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={close} />
           <div
             style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: view === 'root' ? 6 : 16, zIndex: 100, minWidth: view === 'root' ? 170 : 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
             onClick={e => e.stopPropagation()}
@@ -93,7 +103,6 @@ export default function CardActionsMenu({ school }) {
               </>
             )}
           </div>
-        </>
       )}
     </div>
   );

@@ -28,6 +28,17 @@
   .groups { flex-wrap: wrap; }
 }
 
+/* Narrow phones: each filter takes a full row and the Min/Max boxes flex to fit */
+@media (max-width: 640px) {
+  .groups { gap: 12px; width: 100%; }
+  .group { width: 100%; flex-wrap: wrap; }
+  .inputs { flex: 1; min-width: 0; }
+  .input { width: auto; flex: 1; min-width: 56px; }
+  .advRow .group { width: 100%; }
+  .textInput { width: 100%; }
+  .sortSelect { width: 100%; min-width: 0; }
+}
+
 .group {
   display: flex;
   align-items: center;
