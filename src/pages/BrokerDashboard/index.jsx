@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import { useAuth } from '../../context/AuthContext';
 import styles from './BrokerDashboard.module.css';
-import { calcEfficiency } from '../../utils/efficiency';
-import EfficiencyBadge from '../../components/EfficiencyBadge';
+import LeadCard from '../../components/LeadCard';
 
 export default function BrokerDashboard() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const apiFetch  = useAuthFetch();
+  const reveal    = useScrollReveal();
   const { user, logout } = useAuth();
 
   const restoreId = location.state?.restoreCollection || null;
@@ -77,42 +78,16 @@ export default function BrokerDashboard() {
               </div>
             )}
 
-            {selected.schools.map(school => {
-              const eff = calcEfficiency(school);
-              return (
-                <div key={school._id} className={styles.card}>
-                  <div className={styles.cardTop}>
-                    <h2 className={styles.schoolName}>{school.schoolName}</h2>
-                    {school._source && <span className={styles.region}>{school._source}</span>}
-                  </div>
-
-                  {school.address && <p className={styles.address}>{school.address}</p>}
-                  <p className={styles.location}>
-                    {[school.district, school.state].filter(Boolean).join(', ')}
-                  </p>
-
-                  <div className={styles.cardMeta}>
-                    {school.totalStudents != null && (
-                      <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>
-                    )}
-                    {school.totalTeachers != null && (
-                      <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>
-                    )}
-                    <EfficiencyBadge value={eff} className={styles.badge} />
-                  </div>
-
-                  <div className={styles.cardBottom}>
-                    {school.pincode && <span className={styles.pincode}>📍 {school.pincode}</span>}
-                    <button
-                      className={styles.viewBtn}
-                      onClick={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, collectionId: selected._id } })}
-                    >
-                      View Report Card →
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            {selected.schools.map((school, i) => (
+              <LeadCard
+                key={school._id}
+                ref={reveal}
+                className="reveal"
+                style={{ animationDelay: `${(i % 12) * 45}ms` }}
+                school={school}
+                onView={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, collectionId: selected._id } })}
+              />
+            ))}
           </div>
         </main>
         {footer}

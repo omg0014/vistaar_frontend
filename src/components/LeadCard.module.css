@@ -1,0 +1,112 @@
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease, background 0.28s ease;
+}
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 30px -8px rgba(124, 58, 237, 0.28), 0 0 0 1px rgba(124, 58, 237, 0.4);
+  border-color: transparent;
+  background: #fdfcff;
+  z-index: 2;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.topRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.schoolName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+}
+
+.region {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.address { font-size: 0.85rem; color: #6b7280; }
+.location { font-size: 0.85rem; color: #6b7280; }
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.metaItem {
+  font-size: 0.85rem;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.badge {
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  gap: 8px;
+}
+
+.pincode { font-size: 0.85rem; color: #6b7280; flex-shrink: 0; }
+
+.cardActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.viewBtn {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.viewBtn:hover { background: #b45309; }
+
+@media (max-width: 640px) {
+  .card { padding: 14px; gap: 6px; }
+  .cardTop { gap: 8px; }
+  .schoolName { font-size: 0.88rem; }
+  .address { font-size: 0.8rem; }
+  .location { font-size: 0.8rem; }
+  .cardMeta { gap: 8px; flex-wrap: wrap; }
+  .metaItem { font-size: 0.75rem; padding: 3px 8px; }
+  .cardBottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .cardActions { width: 100%; flex-direction: column; gap: 8px; }
+  .viewBtn { width: 100%; text-align: center; padding: 10px; }
+  .pincode { font-size: 0.78rem; }
+  .region { font-size: 0.72rem; padding: 2px 8px; }
+}

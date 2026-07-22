@@ -16,6 +16,7 @@
 }
 .statSeg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 16px; text-align: center; min-width: 0; }
 .statNum { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
+.statName { font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .statLabel { font-size: 0.68rem; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 .statDivider { width: 1px; align-self: stretch; background: rgba(255,255,255,0.22); margin: 4px 0; }
 @media (max-width: 640px) {
@@ -122,6 +123,20 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 14px 20px;
   align-items: start;
+}
+
+/* Lead grid — matches the Results page exactly (width + gap) */
+.leadsList {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 50px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .leadsList { grid-template-columns: 1fr; gap: 12px; padding: 12px 10px; }
 }
 
 .card {
