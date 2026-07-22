@@ -49,7 +49,7 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
     fState: initialValues.fState || '', fPin: initialValues.fPin || '',
     fArea: initialValues.fArea || '', fName: initialValues.fName || '',
   });
-  const initAdvanced = Object.values({ fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '', fState: initialValues.fState || '', fPin: initialValues.fPin || '', fArea: initialValues.fArea || '', fName: initialValues.fName || '' }).some(v => v !== '');
+  const initAdvanced = !!initSort || Object.values({ fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '', fState: initialValues.fState || '', fPin: initialValues.fPin || '', fArea: initialValues.fArea || '', fName: initialValues.fName || '' }).some(v => v !== '');
   const [showAdvanced, setShowAdvanced] = useState(initAdvanced);
 
   function handleApply() {
@@ -82,86 +82,63 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
 
   const adv = TEXT_FILTERS[type] || [];
 
-  function advInput(i) {
-    const f = adv[i];
-    if (!showAdvanced || !f) return null;
-    return (
-      <div className={`${styles.group} ${styles.advInCol}`}>
-        <span className={styles.groupLabel}>{f.label}</span>
-        <input
-          className={styles.textInput}
-          type="text"
-          placeholder={f.placeholder}
-          value={textFilters[f.key]}
-          onChange={e => setTextFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.wrap}>
+      <div className={styles.topRow}>
       <div className={styles.groups}>
-
-        <div className={styles.col}>
-          <div className={styles.group}>
-            <span className={styles.groupLabel}>👩‍🏫 Teachers</span>
-            <div className={styles.inputs}>
-              <input className={styles.input} type="number" placeholder="Min" value={min1} onChange={e => setMin1(e.target.value)} />
-              <span className={styles.dash}>—</span>
-              <input className={styles.input} type="number" placeholder="Max" value={max1} onChange={e => setMax1(e.target.value)} />
-            </div>
+        <div className={styles.group}>
+          <span className={styles.groupLabel}>👩‍🏫 Teachers</span>
+          <div className={styles.inputs}>
+            <input className={styles.input} type="number" placeholder="Min" value={min1} onChange={e => setMin1(e.target.value)} />
+            <span className={styles.dash}>—</span>
+            <input className={styles.input} type="number" placeholder="Max" value={max1} onChange={e => setMax1(e.target.value)} />
           </div>
-          {advInput(0)}
         </div>
 
-        <div className={styles.col}>
-          <div className={styles.group}>
-            <span className={styles.groupLabel}>🎓 Students</span>
-            <div className={styles.inputs}>
-              <input className={styles.input} type="number" placeholder="Min" value={min2} onChange={e => setMin2(e.target.value)} />
-              <span className={styles.dash}>—</span>
-              <input className={styles.input} type="number" placeholder="Max" value={max2} onChange={e => setMax2(e.target.value)} />
-            </div>
+        <div className={styles.group}>
+          <span className={styles.groupLabel}>🎓 Students</span>
+          <div className={styles.inputs}>
+            <input className={styles.input} type="number" placeholder="Min" value={min2} onChange={e => setMin2(e.target.value)} />
+            <span className={styles.dash}>—</span>
+            <input className={styles.input} type="number" placeholder="Max" value={max2} onChange={e => setMax2(e.target.value)} />
           </div>
-          {advInput(1)}
         </div>
 
-        <div className={styles.col}>
-          <div className={styles.group}>
-            <span className={styles.groupLabel}>⚡ Efficiency %</span>
-            <div className={styles.inputs}>
-              <input className={styles.input} type="number" placeholder="Min" value={min3} onChange={e => setMin3(e.target.value)} />
-              <span className={styles.dash}>—</span>
-              <input className={styles.input} type="number" placeholder="Max" value={max3} onChange={e => setMax3(e.target.value)} />
-            </div>
+        <div className={styles.group}>
+          <span className={styles.groupLabel}>⚡ Efficiency %</span>
+          <div className={styles.inputs}>
+            <input className={styles.input} type="number" placeholder="Min" value={min3} onChange={e => setMin3(e.target.value)} />
+            <span className={styles.dash}>—</span>
+            <input className={styles.input} type="number" placeholder="Max" value={max3} onChange={e => setMax3(e.target.value)} />
           </div>
-          {advInput(2)}
         </div>
 
-        <div className={styles.col}>
+      </div>
+
+      <div className={styles.actions}>
+        <button
+          className={styles.advBtn}
+          onClick={() => setShowAdvanced(p => !p)}
+          aria-label={showAdvanced ? 'Hide advanced filters' : 'Show advanced filters'}
+          title="Advanced filters"
+        >
+          {showAdvanced ? '▲' : '▼'}
+        </button>
+        <button className={styles.applyBtn} onClick={handleApply}>Apply</button>
+        {isActive && <button className={styles.clearBtn} onClick={handleClear}>Clear</button>}
+      </div>
+      </div>
+
+      {showAdvanced && (
+        <div className={styles.advRow}>
           <div className={styles.group}>
+            <span className={styles.groupLabel}>Sort by</span>
             <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
               {SORT_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
-          {advInput(3)}
-        </div>
-
-        <div className={styles.col}>
-          <div className={styles.group}>
-            <button className={styles.advBtn} onClick={() => setShowAdvanced(p => !p)}>
-              {showAdvanced ? 'Hide ▲' : 'Advanced ▼'}
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {showAdvanced && adv.length > 0 && (
-        <div className={styles.mobileAdvRow}>
           {adv.map(f => (
             <div key={f.key} className={styles.group}>
               <span className={styles.groupLabel}>{f.label}</span>
@@ -176,11 +153,6 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
           ))}
         </div>
       )}
-
-      <div className={styles.actions}>
-        <button className={styles.applyBtn} onClick={handleApply}>Apply</button>
-        {isActive && <button className={styles.clearBtn} onClick={handleClear}>Clear</button>}
-      </div>
     </div>
   );
 }

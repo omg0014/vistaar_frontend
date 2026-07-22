@@ -1,5 +1,68 @@
 .page { min-height: 100vh; background: #f3f4f6; }
 
+/* Filter shown as a card floating on the hero */
+.filterCard {
+  width: 100%;
+  max-width: 1000px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  margin-bottom: 18px;
+}
+
+/* Glassy summary strip inside the hero — three equal parts, like the home stats card */
+.summary {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  align-items: stretch;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 16px;
+  padding: 18px 8px;
+  backdrop-filter: blur(8px);
+}
+.sumSeg {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 24px;
+  text-align: center;
+  min-width: 0;
+}
+.sumNum { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
+.sumVal {
+  font-size: 1.15rem; font-weight: 700; color: #fff; line-height: 1.2; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sumLabel { font-size: 0.72rem; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.sumDivider { width: 1px; align-self: stretch; background: rgba(255,255,255,0.25); margin: 4px 0; }
+
+.saveWrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 16px; }
+.saveBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.saveBtn:hover { background: rgba(255,255,255,0.16); }
+
+@media (max-width: 640px) {
+  .summary { flex-direction: column; align-items: stretch; padding: 8px 16px; }
+  .sumSeg, .saveWrap { padding: 12px 0; }
+  .sumDivider { width: auto; height: 1px; margin: 0; }
+}
+
 .topBar {
   display: flex;
   align-items: center;
@@ -51,15 +114,17 @@
 }
 
 .list {
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 50px;   /* row-gap · larger column-gap between the two leads */
+  align-items: start;
 }
 
 .msg {
+  grid-column: 1 / -1;   /* messages span both columns */
   text-align: center;
   padding: 40px;
   color: #6b7280;
@@ -177,7 +242,7 @@
   .breadcrumb { order: 2; flex: 1 1 auto; min-width: 0; }
   .queryLabel { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; }
   .count { order: 3; font-size: 0.75rem; padding: 3px 10px; white-space: nowrap; }
-  .list { padding: 12px 10px; gap: 10px; }
+  .list { grid-template-columns: 1fr; padding: 12px 10px; gap: 10px; }
   .card { padding: 14px; gap: 6px; }
   .cardTop { gap: 8px; }
   .schoolName { font-size: 0.88rem; }
