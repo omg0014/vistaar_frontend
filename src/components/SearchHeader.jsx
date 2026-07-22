@@ -19,6 +19,7 @@ export default function SearchHeader({
   options, mode, onModeChange,
   value, onChange, onKeyDown, onSubmit, placeholder, icon = 'search',
   secondValue, onSecondChange, secondPlaceholder,
+  children,
 }) {
   return (
     <div
@@ -78,6 +79,7 @@ export default function SearchHeader({
           </div>
         </div>
       )}
+      {children}
     </div>
   );
 }

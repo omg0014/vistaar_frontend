@@ -5,12 +5,15 @@ import { TYPE_LABELS } from '../../constants/searchTypes';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import Filter from './Filter';
 import styles from './Results.module.css';
-import bmIcon from '../../assets/bookmark.png';
 import { calcEfficiency } from '../../utils/efficiency';
 import EfficiencyBadge from '../../components/EfficiencyBadge';
 import CardActionsMenu from '../../components/CardActionsMenu';
+import SearchHeader from '../../components/SearchHeader';
+import HeaderMenu from '../../components/HeaderMenu';
 
 const LIMIT = 10;
+const SUBTITLE = "'विस्तार' मार्गदर्शेन, भारतं विश्वगौरवम्।\nयुगपुरुषाः युगरूपाश्च, शिक्षया सन्तु दीपिताः॥";
+const SUBTITLE_EN = 'Guided by the vast vision of the Vistaar app, may Bharat rise to its destiny as a global leader by the year 2047. Through excellence in education, may our students—both young men and women—be illuminated as the architects and changemakers of this new era.';
 
 function buildBody(type, q, page, filterParams) {
   return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, q, page, limit: LIMIT, ...filterParams }) };
@@ -47,6 +50,7 @@ export default function Results() {
   const [saveOpen,    setSaveOpen]    = useState(false);
   const [scCols,      setScCols]      = useState([]);
   const [scNewCol,    setScNewCol]    = useState('');
+
 
   const sentinelRef    = useRef(null);
   const loadingRef     = useRef(false);
@@ -186,49 +190,60 @@ export default function Results() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.topBar}>
-        <button className={styles.backBtn} onClick={() => navigate('/')}>← Back</button>
-        <span className={styles.breadcrumb}>
-          <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
-          <span className={styles.queryLabel}>{q}</span>
-        </span>
-        {!loading && (
-          <span className={styles.count}>
-            {results.length < total
-              ? `Showing ${results.length} of ${total} schools`
-              : `${total} schools found`}
-          </span>
-        )}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button aria-label="Save this search" title="Save Search" onClick={openSaveSearch} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', opacity: saveOpen ? 1 : 0.55 }}><img src={bmIcon} alt="" style={{ width: 18, height: 18, display: 'block' }} /></button>
-          {saveOpen && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setSaveOpen(false)} />
-              <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Save to Search Collection</p>
-                {scCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No search collections yet</p>}
-                {scCols.map(col => {
-                  const inCol = (col.searches || []).some(s => s.type === type && s.q === q && filtersKey(s.filters) === filtersKey(filterParams));
-                  return (
-                    <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                      <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({(col.searches || []).length})</span></span>
-                      <button onClick={() => toggleScCol(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
-                        {inCol ? 'Remove' : '+ Add'}
-                      </button>
-                    </div>
-                  );
-                })}
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={scNewCol} onChange={e => setScNewCol(e.target.value)} onKeyDown={e => e.key === 'Enter' && createScCol()} />
-                  <button onClick={createScCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
-                </div>
-              </div>
-            </>
-          )}
+      <SearchHeader
+        title="Vistaar"
+        subtitle={SUBTITLE}
+        tooltip={SUBTITLE_EN}
+        onBack={() => navigate('/')}
+        backLabel="← Back to Search"
+        rightSlot={<HeaderMenu />}
+      >
+        <div className={styles.filterCard}>
+          <Filter onApply={handleApplyFilter} initialValues={filterParams} type={type} />
         </div>
-      </div>
 
-      <Filter onApply={handleApplyFilter} initialValues={filterParams} type={type} />
+        <div className={styles.summary}>
+          <div className={styles.sumSeg}>
+            <span className={styles.sumNum}>{loading ? '…' : total.toLocaleString('en-IN')}</span>
+            <span className={styles.sumLabel}>Schools</span>
+          </div>
+          <span className={styles.sumDivider} />
+          <div className={styles.sumSeg}>
+            <span className={styles.sumVal} title={q}>{q}</span>
+            <span className={styles.sumLabel}>{TYPE_LABELS[type]}</span>
+          </div>
+          <span className={styles.sumDivider} />
+          <div className={styles.saveWrap}>
+            <button className={styles.saveBtn} aria-label="Save this search" onClick={openSaveSearch}>
+              Save Search
+            </button>
+            {saveOpen && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setSaveOpen(false)} />
+                <div style={{ position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, zIndex: 100, minWidth: 240, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#374151' }}>Save to Search Collection</p>
+                  {scCols.length === 0 && <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 12 }}>No search collections yet</p>}
+                  {scCols.map(col => {
+                    const inCol = (col.searches || []).some(s => s.type === type && s.q === q && filtersKey(s.filters) === filtersKey(filterParams));
+                    return (
+                      <div key={col._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#374151' }}>{col.name} <span style={{ color: '#9ca3af' }}>({(col.searches || []).length})</span></span>
+                        <button onClick={() => toggleScCol(col)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.78rem', background: inCol ? '#fee2e2' : '#ede9fe', color: inCol ? '#dc2626' : '#7c3aed', fontWeight: 600 }}>
+                          {inCol ? 'Remove' : '+ Add'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <input style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.82rem', outline: 'none' }} placeholder="New collection..." value={scNewCol} onChange={e => setScNewCol(e.target.value)} onKeyDown={e => e.key === 'Enter' && createScCol()} />
+                    <button onClick={createScCol} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>+</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </SearchHeader>
 
       <div className={styles.list}>
         {loading && [...Array(5)].map((_, i) => (
@@ -305,7 +320,7 @@ export default function Results() {
         })}
 
         {loadingMore && <p className={styles.msg}>Loading more...</p>}
-        {!loading && hasMore && <div ref={sentinelRef} style={{ height: 20 }} />}
+        {!loading && hasMore && <div ref={sentinelRef} style={{ height: 20, gridColumn: '1 / -1' }} />}
       </div>
     </div>
   );
