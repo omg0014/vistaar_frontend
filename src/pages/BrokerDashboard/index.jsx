@@ -3,22 +3,34 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import useScrollReveal from '../../hooks/useScrollReveal';
-import { useAuth } from '../../context/AuthContext';
-import styles from './BrokerDashboard.module.css';
+import SearchHeader from '../../components/SearchHeader';
+import HeaderMenu from '../../components/HeaderMenu';
 import LeadCard from '../../components/LeadCard';
+import styles from './BrokerDashboard.module.css';
+
+const SUBTITLE = "'विस्तार' मार्गदर्शेन, भारतं विश्वगौरवम्।\nयुगपुरुषाः युगरूपाश्च, शिक्षया सन्तु दीपिताः॥";
+const SUBTITLE_EN = 'Guided by the vast vision of the Vistaar app, may Bharat rise to its destiny as a global leader by the year 2047. Through excellence in education, may our students—both young men and women—be illuminated as the architects and changemakers of this new era.';
 
 export default function BrokerDashboard() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const apiFetch  = useAuthFetch();
   const reveal    = useScrollReveal();
-  const { user, logout } = useAuth();
 
   const restoreId = location.state?.restoreCollection || null;
 
   const [collections, setCollections] = useState([]);
   const [selected,    setSelected]    = useState(null);
   const [loading,     setLoading]     = useState(true);
+
+  // Collections-list search
+  const [colQuery,   setColQuery]   = useState('');
+  const [colApplied, setColApplied] = useState('');
+
+  // In-collection school search (detail view)
+  const [schoolQuery,   setSchoolQuery]   = useState('');
+  const [schoolApplied, setSchoolApplied] = useState('');
+  useEffect(() => { setSchoolQuery(''); setSchoolApplied(''); }, [selected?._id]);
 
   useEffect(() => {
     apiFetch(`${API_BASE}/api/broker/collections`, { method: 'POST' })
@@ -35,20 +47,6 @@ export default function BrokerDashboard() {
       .catch(() => setLoading(false));
   }, [apiFetch, restoreId]);
 
-  const header = (
-    <header className={styles.header}>
-      <div className={styles.headerBrand}>
-        <span className={styles.brandName}>Vistaar</span>
-        <span className={styles.brandTag}>Broker Portal</span>
-      </div>
-      <div className={styles.headerRight}>
-        {user?.picture && <img src={user.picture} alt={user.name} className={styles.avatar} />}
-        <span className={styles.userName}>{user?.name}</span>
-        <button className={styles.logoutBtn} onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }}>Logout</button>
-      </div>
-    </header>
-  );
-
   const footer = (
     <footer className={styles.footer}>
       <span className={styles.footerBrand}>Vistaar</span>
@@ -58,27 +56,55 @@ export default function BrokerDashboard() {
 
   /* ── Collection detail view: schools inside a shared collection ── */
   if (selected) {
+    const applied = schoolApplied.trim().toLowerCase();
+    const schoolFiltering = applied !== '';
+    const detailSchools = schoolFiltering
+      ? selected.schools.filter(s => (s.schoolName || '').toLowerCase().includes(applied))
+      : selected.schools;
+
     return (
       <div className={styles.page}>
-        {header}
-        <main className={styles.main}>
-          <div className={styles.pageTitle}>
-            <button className={styles.logoutBtn} onClick={() => setSelected(null)} style={{ marginBottom: 12 }}>
-              ← Back to Collections
-            </button>
-            <h1 className={styles.title}>{selected.name}</h1>
-            <span className={styles.countBadge}>{selected.schools.length} school{selected.schools.length !== 1 ? 's' : ''}</span>
+        <SearchHeader
+          title="Vistaar"
+          subtitle={SUBTITLE}
+          tooltip={SUBTITLE_EN}
+          onBack={() => setSelected(null)}
+          backLabel="← Back to Collections"
+          rightSlot={<HeaderMenu />}
+          value={schoolQuery}
+          onChange={setSchoolQuery}
+          onKeyDown={e => { if (e.key === 'Enter') setSchoolApplied(schoolQuery.trim()); }}
+          onSubmit={() => setSchoolApplied(schoolQuery.trim())}
+          placeholder="Search schools in this collection…"
+          icon="search"
+        >
+          <div className={styles.stats}>
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{selected.schools.length}</span>
+              <span className={styles.statLabel}>Schools</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statName} title={selected.name}>{selected.name}</span>
+              <span className={styles.statLabel}>Collection</span>
+            </div>
+            <span className={styles.statDivider} />
+            <div className={styles.statSeg}>
+              <span className={styles.statNum}>{detailSchools.length}</span>
+              <span className={styles.statLabel}>Showing</span>
+            </div>
           </div>
+        </SearchHeader>
 
+        <main className={styles.main}>
           <div className={styles.list}>
-            {selected.schools.length === 0 && (
+            {detailSchools.length === 0 && (
               <div className={styles.empty}>
                 <div className={styles.emptyIcon}>📋</div>
-                <p className={styles.emptyTitle}>This collection is empty</p>
+                <p className={styles.emptyTitle}>{schoolFiltering ? `No schools match “${schoolApplied}”` : 'This collection is empty'}</p>
               </div>
             )}
-
-            {selected.schools.map((school, i) => (
+            {detailSchools.map((school, i) => (
               <LeadCard
                 key={school._id}
                 ref={reveal}
@@ -96,17 +122,46 @@ export default function BrokerDashboard() {
   }
 
   /* ── Collections list view ── */
+  const applied = colApplied.trim().toLowerCase();
+  const colFiltering = applied !== '';
+  const visibleCols = colFiltering
+    ? collections.filter(c => (c.name || '').toLowerCase().includes(applied))
+    : collections;
+  const totalSchools = collections.reduce((s, c) => s + (c.schools?.length || 0), 0);
+
   return (
     <div className={styles.page}>
-      {header}
+      <SearchHeader
+        title="Vistaar"
+        subtitle={SUBTITLE}
+        tooltip={SUBTITLE_EN}
+        rightSlot={<HeaderMenu />}
+        value={colQuery}
+        onChange={setColQuery}
+        onKeyDown={e => { if (e.key === 'Enter') setColApplied(colQuery.trim()); }}
+        onSubmit={() => setColApplied(colQuery.trim())}
+        placeholder="Search your collections…"
+        icon="search"
+      >
+        <div className={styles.stats}>
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{collections.length}</span>
+            <span className={styles.statLabel}>Collections</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{totalSchools}</span>
+            <span className={styles.statLabel}>Schools</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{visibleCols.length}</span>
+            <span className={styles.statLabel}>Showing</span>
+          </div>
+        </div>
+      </SearchHeader>
 
       <main className={styles.main}>
-        <div className={styles.pageTitle}>
-          <h1 className={styles.title}>Your Collections</h1>
-          <p className={styles.subtitle}>School collections shared with you by the admin team</p>
-          {!loading && <span className={styles.countBadge}>{collections.length} collection{collections.length !== 1 ? 's' : ''}</span>}
-        </div>
-
         <div className={styles.list}>
           {loading && [...Array(3)].map((_, i) => (
             <div key={i} className={styles.card}>
@@ -125,7 +180,14 @@ export default function BrokerDashboard() {
             </div>
           )}
 
-          {!loading && collections.map(col => (
+          {!loading && collections.length > 0 && visibleCols.length === 0 && (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>🔍</div>
+              <p className={styles.emptyTitle}>No collections match “{colApplied}”</p>
+            </div>
+          )}
+
+          {!loading && visibleCols.map(col => (
             <div key={col._id} className={styles.card} onClick={() => setSelected(col)} style={{ cursor: 'pointer' }}>
               <div className={styles.cardTop}>
                 <h2 className={styles.schoolName}>{col.name}</h2>

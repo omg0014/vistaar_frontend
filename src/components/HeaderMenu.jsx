@@ -28,10 +28,12 @@ export default function HeaderMenu() {
       {open && (
         <div className={styles.menu}>
           <p className={styles.name}>{user?.name}</p>
-          <button onClick={() => { setOpen(false); navigate('/bookmarks'); }} className={styles.item}>Bookmarks</button>
-          <button onClick={() => { setOpen(false); navigate('/saved-searches'); }} className={styles.item}>Saved Searches</button>
           {user?.role === 'admin' && (
-            <button onClick={() => { setOpen(false); navigate('/admin'); }} className={styles.item}>Brokers</button>
+            <>
+              <button onClick={() => { setOpen(false); navigate('/bookmarks'); }} className={styles.item}>Bookmarks</button>
+              <button onClick={() => { setOpen(false); navigate('/saved-searches'); }} className={styles.item}>Saved Searches</button>
+              <button onClick={() => { setOpen(false); navigate('/admin'); }} className={styles.item}>Brokers</button>
+            </>
           )}
           <button onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }} className={styles.item}>Logout</button>
         </div>
