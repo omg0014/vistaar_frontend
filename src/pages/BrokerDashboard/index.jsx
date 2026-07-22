@@ -20,7 +20,13 @@ export default function BrokerDashboard() {
   const restoreId = location.state?.restoreCollection || null;
 
   const [collections, setCollections] = useState([]);
-  const [selected,    setSelected]    = useState(null);
+  // Hydrate the opened collection from cache so back-from-report-card renders instantly.
+  const [selected,    setSelected]    = useState(() => {
+    if (restoreId) {
+      try { const c = sessionStorage.getItem(`bd_col_${restoreId}`); if (c) return JSON.parse(c); } catch {}
+    }
+    return null;
+  });
   const [loading,     setLoading]     = useState(true);
 
   // Collections-list search
@@ -40,12 +46,34 @@ export default function BrokerDashboard() {
         setCollections(cols);
         if (restoreId) {
           const col = cols.find(c => c._id === restoreId);
-          if (col) setSelected(col);
+          if (col) {
+            setSelected(col);
+            const savedY = sessionStorage.getItem(`bd_scroll_${col._id}`);
+            if (savedY) {
+              setTimeout(() => {
+                window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' });
+                sessionStorage.removeItem(`bd_scroll_${col._id}`);
+              }, 60);
+            }
+          }
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [apiFetch, restoreId]);
+
+  // Fast scroll restore when the collection is hydrated from cache (no wait for the fetch).
+  useEffect(() => {
+    if (!restoreId || !selected) return;
+    const savedY = sessionStorage.getItem(`bd_scroll_${restoreId}`);
+    if (!savedY) return;
+    const t = setTimeout(() => {
+      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' });
+      sessionStorage.removeItem(`bd_scroll_${restoreId}`);
+    }, 60);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const footer = (
     <footer className={styles.footer}>
@@ -111,7 +139,13 @@ export default function BrokerDashboard() {
                 className="reveal"
                 style={{ animationDelay: `${(i % 12) * 45}ms` }}
                 school={school}
-                onView={() => navigate(`/school/${school._id}`, { state: { fromBroker: true, collectionId: selected._id } })}
+                onView={() => {
+                  try {
+                    sessionStorage.setItem(`bd_scroll_${selected._id}`, String(window.scrollY));
+                    sessionStorage.setItem(`bd_col_${selected._id}`, JSON.stringify(selected));
+                  } catch {}
+                  navigate(`/school/${school._id}`, { state: { fromBroker: true, collectionId: selected._id } });
+                }}
               />
             ))}
           </div>
