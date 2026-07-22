@@ -28,8 +28,16 @@ export default function Bookmarks() {
 
   // School bookmark collections
   const [cols,         setCols]         = useState([]);
-  const [selected,     setSelected]     = useState(null);
+  // Hydrate the opened collection from cache so back-nav renders instantly (no blank flash);
+  // the background fetch below refreshes it with live data.
+  const [selected,     setSelected]     = useState(() => {
+    if (restoreId) {
+      try { const c = sessionStorage.getItem(`bm_col_${restoreId}`); if (c) return JSON.parse(c); } catch {}
+    }
+    return null;
+  });
   const [menuOpen,     setMenuOpen]     = useState(null);
+  const firstSyncRef                    = useRef(true);
   const dragIndexRef                    = useRef(null);
   const [dragId,       setDragId]       = useState(null);
   const schoolDragIndexRef              = useRef(null);
@@ -56,11 +64,26 @@ export default function Bookmarks() {
       .catch(() => {});
   }, [apiFetch]);
 
-  // Sync with URL: when browser back removes ?col, go back to collections list
+  // Sync with URL: when browser back removes ?col, go back to collections list.
+  // Skip the first run so a cache-hydrated restore isn't cleared before the fetch sets ?col.
   useEffect(() => {
+    if (firstSyncRef.current) { firstSyncRef.current = false; return; }
     if (!searchParams.get('col')) setSelected(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Fast scroll restore when the collection is hydrated from cache (no wait for the fetch).
+  useEffect(() => {
+    if (!restoreId || !selected) return;
+    const savedY = sessionStorage.getItem(`bm_scroll_${restoreId}`);
+    if (!savedY) return;
+    const t = setTimeout(() => {
+      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' });
+      sessionStorage.removeItem(`bm_scroll_${restoreId}`);
+    }, 60);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function toggleShareCol(col, broker) {
     const alreadyShared = (col.sharedWith || []).includes(broker.email);
@@ -93,6 +116,14 @@ export default function Bookmarks() {
           if (col) {
             setSelected(col);
             if (!searchParams.get('col')) setSearchParams({ col: col._id });
+            // Restore scroll to the card the user opened before viewing the report
+            const savedY = sessionStorage.getItem(`bm_scroll_${col._id}`);
+            if (savedY) {
+              setTimeout(() => {
+                window.scrollTo({ top: parseInt(savedY, 10), behavior: 'instant' });
+                sessionStorage.removeItem(`bm_scroll_${col._id}`);
+              }, 60);
+            }
           }
         }
         setLoading(false);
@@ -233,7 +264,13 @@ export default function Bookmarks() {
                 onDragEnd={() => { schoolDragIndexRef.current = null; setSchoolDragId(null); }}
                 style={{ cursor: schoolFiltering ? 'default' : 'grab', opacity: schoolDragId === school._id ? 0.4 : 1, animationDelay: `${(index % 12) * 45}ms` }}
                 title={schoolFiltering ? undefined : 'Drag to reorder'}
-                onView={() => navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } })}
+                onView={() => {
+                  try {
+                    sessionStorage.setItem(`bm_scroll_${selected._id}`, String(window.scrollY));
+                    sessionStorage.setItem(`bm_col_${selected._id}`, JSON.stringify(selected));
+                  } catch {}
+                  navigate(`/school/${school._id}`, { state: { fromBookmarks: true, collectionId: selected._id } });
+                }}
                 menu={
                   <div draggable={false} style={{ position: 'relative' }}>
                     <button aria-label={`Options for ${school.schoolName}`} onClick={e => toggleMenu(e, school._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
