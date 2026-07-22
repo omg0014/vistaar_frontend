@@ -226,6 +226,10 @@ export default function Bookmarks() {
     ? cols.filter(c => c.name.toLowerCase().includes(appliedQuery.trim().toLowerCase()))
     : cols;
 
+  // Stats reflect the current (filtered) list — visibleCols === cols when no filter is applied.
+  const totalSchools = visibleCols.reduce((s, c) => s + (c.schools?.length || 0), 0);
+  const topCol       = visibleCols.reduce((m, c) => Math.max(m, c.schools?.length || 0), 0);
+
   // ── Collections list view ──────────────────────────────────
   return (
     <div className={styles.pageWrap}>
@@ -245,7 +249,24 @@ export default function Bookmarks() {
         onSubmit={submitHeader}
         placeholder={mode === 'search' ? 'Search your collections by name…' : 'New collection name, then +'}
         icon={mode === 'create' ? 'plus' : 'search'}
-      />
+      >
+        <div className={styles.stats}>
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{visibleCols.length}</span>
+            <span className={styles.statLabel}>Collections</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{totalSchools}</span>
+            <span className={styles.statLabel}>Bookmarked</span>
+          </div>
+          <span className={styles.statDivider} />
+          <div className={styles.statSeg}>
+            <span className={styles.statNum}>{topCol}</span>
+            <span className={styles.statLabel}>Top Collection</span>
+          </div>
+        </div>
+      </SearchHeader>
 
       <div className={styles.page}>
         {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
