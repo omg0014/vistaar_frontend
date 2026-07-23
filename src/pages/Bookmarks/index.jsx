@@ -54,6 +54,34 @@ export default function Bookmarks() {
   const [schoolApplied, setSchoolApplied] = useState('');
   useEffect(() => { setSchoolQuery(''); setSchoolApplied(''); }, [selected?._id]);
 
+  // Backfill class range (and other newer fields) for schools bookmarked before
+  // this data was captured in the stored snapshot — fetch the live record for
+  // any school in the open collection that's missing it.
+  useEffect(() => {
+    if (!selected) return;
+    const missing = selected.schools.filter(s => s.lowestClass === undefined && s.highestClass === undefined);
+    if (missing.length === 0) return;
+    let cancelled = false;
+    Promise.all(missing.map(s =>
+      apiFetch(`${API_BASE}/api/schools/school/${s._id}`, { method: 'POST' })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+    )).then(fetched => {
+      if (cancelled) return;
+      const byId = new Map();
+      fetched.forEach((doc, i) => { if (doc) byId.set(missing[i]._id, doc); });
+      if (byId.size === 0) return;
+      const patch = (schools) => schools.map(s => {
+        const doc = byId.get(s._id);
+        return doc ? { ...s, lowestClass: doc.lowestClass ?? null, highestClass: doc.highestClass ?? null } : s;
+      });
+      setSelected(prev => prev ? { ...prev, schools: patch(prev.schools) } : prev);
+      setCols(prev => prev.map(c => c._id === selected._id ? { ...c, schools: patch(c.schools) } : c));
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?._id]);
+
   // Broker sharing (collections are shared with brokers as a whole)
   const [brokers,      setBrokers]      = useState([]);
   const [sharing,      setSharing]      = useState(null); // broker email being toggled
