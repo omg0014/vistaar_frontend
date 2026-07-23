@@ -347,6 +347,95 @@ function SectionTable({ section, school, locProps }) {
   );
 }
 
+// Prepend a scheme when the stored value is a bare host/path so href works.
+function normalizeUrl(u) {
+  const s = String(u).trim();
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+
+const linkStyle = { color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' };
+
+// Social media, mandatory-disclosure page, and disclosure PDFs — all read
+// straight from the school document, so anything updated in MongoDB shows here
+// on the next load. Each block renders only when its own data exists; a missing
+// field produces no section and no placeholder.
+function DisclosureSections({ school }) {
+  const socialEntries = Object.entries(school._socialLinks || {})
+    .filter(([, v]) => typeof v === 'string' && v.trim() !== '');
+
+  const disclosureUrl = typeof school._mandatoryDisclosureUrl === 'string' && school._mandatoryDisclosureUrl.trim() !== ''
+    ? school._mandatoryDisclosureUrl.trim()
+    : null;
+
+  const docs = Array.isArray(school._mandatoryDisclosureDocs)
+    ? school._mandatoryDisclosureDocs.filter(d => d && typeof d.url === 'string' && d.url.trim() !== '')
+    : [];
+
+  if (socialEntries.length === 0 && !disclosureUrl && docs.length === 0) return null;
+
+  return (
+    <div className={styles.sectionsGrid}>
+      {socialEntries.length > 0 && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Social Media</h2>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <tbody>
+                {socialEntries.map(([platform, url]) => (
+                  <tr key={platform} className={styles.row}>
+                    <td className={styles.tdLabel} style={{ textTransform: 'capitalize' }}>{platform}</td>
+                    <td className={styles.tdVal}>
+                      <a href={normalizeUrl(url)} target="_blank" rel="noreferrer" style={linkStyle}>{url}</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {disclosureUrl && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Mandatory Disclosure</h2>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <tbody>
+                <tr className={styles.row}>
+                  <td className={styles.tdLabel}>Disclosure Page</td>
+                  <td className={styles.tdVal}>
+                    <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {docs.length > 0 && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Mandatory Disclosure Documents</h2>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <tbody>
+                {docs.map((d, i) => (
+                  <tr key={`${d.url}-${i}`} className={styles.row}>
+                    <td className={styles.tdLabel}>{`Document ${i + 1}`}</td>
+                    <td className={styles.tdVal}>
+                      <a href={normalizeUrl(d.url)} target="_blank" rel="noreferrer" style={linkStyle}>{d.url}</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SchoolDetail({ publicMode = false }) {
   const params_                 = useParams();
   const id                      = params_.id || params_.slug; // public mode uses :slug param
@@ -570,6 +659,8 @@ export default function SchoolDetail({ publicMode = false }) {
               <SectionTable key={sec.title} section={sec} school={school} locProps={locProps} />
             ))}
           </div>
+
+          {!publicMode && <DisclosureSections school={school} />}
         </div>
       )}
     </div>
