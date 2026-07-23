@@ -7,8 +7,18 @@ import { calcEfficiency } from '../utils/efficiency';
 // Bookmark collections, and the Broker Dashboard so they look/animate identically.
 // `menu` renders in the top-right (e.g. the ⋯ actions); any extra DOM props
 // (draggable, onDrag*, style, className, the reveal ref) are forwarded to the root.
+function classRange(school) {
+  const lo = school.lowestClass;
+  const hi = school.highestClass;
+  if (lo == null && hi == null) return null;
+  if (lo == null) return `Up to ${hi}`;
+  if (hi == null) return `${lo}+`;
+  return lo === hi ? `${lo}` : `${lo}-${hi}`;
+}
+
 const LeadCard = forwardRef(function LeadCard({ school, menu, onView, className = '', ...rest }, ref) {
   const eff = calcEfficiency(school);
+  const classes = classRange(school);
   return (
     <div ref={ref} className={`${styles.card} ${className}`} {...rest}>
       <div className={styles.cardTop}>
@@ -25,6 +35,7 @@ const LeadCard = forwardRef(function LeadCard({ school, menu, onView, className 
       <div className={styles.cardMeta}>
         {school.totalStudents != null && <span className={styles.metaItem}>🎓 {school.totalStudents} students</span>}
         {school.totalTeachers != null && <span className={styles.metaItem}>👩‍🏫 {school.totalTeachers} teachers</span>}
+        {classes && <span className={styles.metaItem}>📚 {classes}</span>}
         <EfficiencyBadge value={eff} className={styles.badge} />
       </div>
 

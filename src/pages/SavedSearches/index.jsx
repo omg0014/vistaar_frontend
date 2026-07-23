@@ -23,6 +23,7 @@ function filterTags(filters) {
   if (f.min2 || f.max2) tags.push(`Students: ${f.min2 && f.max2 ? `${f.min2}–${f.max2}` : f.min2 ? `≥${f.min2}` : `≤${f.max2}`}`);
   if (f.min3 || f.max3) tags.push(`Efficiency: ${f.min3 && f.max3 ? `${f.min3}–${f.max3}%` : f.min3 ? `≥${f.min3}%` : `≤${f.max3}%`}`);
   if (f.sortBy) tags.push(`Sort: ${SORT_LABELS[f.sortBy] || f.sortBy} ${f.sortOrder === 'desc' ? '↓' : '↑'}`);
+  if (f.minClass) tags.push(`Classes: K-${f.minClass}`);
   if (f.fCity)     tags.push(`City: ${f.fCity}`);
   if (f.fDistrict) tags.push(`District: ${f.fDistrict}`);
   if (f.fState)    tags.push(`State: ${f.fState}`);

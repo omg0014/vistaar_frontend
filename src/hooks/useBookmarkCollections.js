@@ -25,6 +25,7 @@ export default function useBookmarkCollections(school) {
       const s = {
         _id: school._id, schoolName: school.schoolName, district: school.district, state: school.state,
         totalStudents: school.totalStudents, totalTeachers: school.totalTeachers, totalClassrooms: school.totalClassrooms,
+        lowestClass: school.lowestClass, highestClass: school.highestClass,
       };
       await apiFetch(`${API_BASE}/api/schools/bookmarks/${col._id}/schools`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ school: s }),

@@ -35,6 +35,15 @@ const SORT_OPTIONS = [
   { value: 'efficiency_desc',  label: '⚡ Efficiency: High → Low' },
 ];
 
+// Highest-class threshold: e.g. "K-7" keeps schools whose highest class is ≥ 7.
+const CLASS_OPTIONS = [
+  { value: '',   label: '📚 Classes' },
+  { value: '5',  label: 'K-5' },
+  { value: '7',  label: 'K-7' },
+  { value: '10', label: 'K-10' },
+  { value: '12', label: 'K-12' },
+];
+
 export default function Filter({ onApply, initialValues = {}, type = 'schoolName' }) {
   const [min1, setMin1] = useState(initialValues.min1 || '');
   const [max1, setMax1] = useState(initialValues.max1 || '');
@@ -44,12 +53,13 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
   const [max3, setMax3] = useState(initialValues.max3 || '');
   const initSort = initialValues.sortBy && initialValues.sortOrder ? `${initialValues.sortBy}_${initialValues.sortOrder}` : '';
   const [sortBy, setSortBy] = useState(initSort);
+  const [minClass, setMinClass] = useState(initialValues.minClass || '');
   const [textFilters, setTextFilters] = useState({
     fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '',
     fState: initialValues.fState || '', fPin: initialValues.fPin || '',
     fArea: initialValues.fArea || '', fName: initialValues.fName || '',
   });
-  const initAdvanced = !!initSort || Object.values({ fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '', fState: initialValues.fState || '', fPin: initialValues.fPin || '', fArea: initialValues.fArea || '', fName: initialValues.fName || '' }).some(v => v !== '');
+  const initAdvanced = !!initSort || !!(initialValues.minClass) || Object.values({ fCity: initialValues.fCity || '', fDistrict: initialValues.fDistrict || '', fState: initialValues.fState || '', fPin: initialValues.fPin || '', fArea: initialValues.fArea || '', fName: initialValues.fName || '' }).some(v => v !== '');
   const [showAdvanced, setShowAdvanced] = useState(initAdvanced);
 
   function handleApply() {
@@ -65,20 +75,10 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
       params.sortBy    = field;
       params.sortOrder = order;
     }
+    if (minClass !== '') params.minClass = minClass;
     Object.entries(textFilters).forEach(([k, v]) => { if (v.trim()) params[k] = v.trim(); });
     onApply(params);
   }
-
-  function handleClear() {
-    setMin1(''); setMax1('');
-    setMin2(''); setMax2('');
-    setMin3(''); setMax3('');
-    setSortBy('');
-    setTextFilters({ fCity: '', fDistrict: '', fState: '', fPin: '', fArea: '', fName: '' });
-    onApply({});
-  }
-
-  const isActive = [min1, max1, min2, max2, min3, max3].some(v => v !== '') || sortBy !== '' || Object.values(textFilters).some(v => v !== '');
 
   const adv = TEXT_FILTERS[type] || [];
 
@@ -125,7 +125,6 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
           {showAdvanced ? '▲' : '▼'}
         </button>
         <button className={styles.applyBtn} onClick={handleApply}>Apply</button>
-        {isActive && <button className={styles.clearBtn} onClick={handleClear}>Clear</button>}
       </div>
       </div>
 
@@ -135,6 +134,14 @@ export default function Filter({ onApply, initialValues = {}, type = 'schoolName
             <span className={styles.groupLabel}>Sort by</span>
             <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
               {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>Classes</span>
+            <select className={styles.sortSelect} value={minClass} onChange={e => setMinClass(e.target.value)} title="Schools whose highest class is at least this grade">
+              {CLASS_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
