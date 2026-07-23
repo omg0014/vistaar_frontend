@@ -9,6 +9,7 @@ import LeadCard from '../../components/LeadCard';
 import styles from './Bookmarks.module.css';
 
 const MENU_STYLE = { position: 'absolute', top: '110%', right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 180, overflow: 'hidden' };
+const SHARE_MENU_STYLE = { ...MENU_STYLE, minWidth: 260 };
 const MENU_ITEM  = { display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', color: '#dc2626' };
 
 const SUBTITLE = "'विस्तार' मार्गदर्शेन, भारतं विश्वगौरवम्।\nयुगपुरुषाः युगरूपाश्च, शिक्षया सन्तु दीपिताः॥";
@@ -56,6 +57,7 @@ export default function Bookmarks() {
   // Broker sharing (collections are shared with brokers as a whole)
   const [brokers,      setBrokers]      = useState([]);
   const [sharing,      setSharing]      = useState(null); // broker email being toggled
+  const [brokerFilter, setBrokerFilter] = useState('');
 
   useEffect(() => {
     apiFetch(`${API_BASE}/api/admin/brokers/list`, { method: 'POST' })
@@ -202,7 +204,7 @@ export default function Bookmarks() {
     }).catch(() => {});
   }
 
-  function toggleMenu(e, id) { e.stopPropagation(); setMenuOpen(prev => prev === id ? null : id); }
+  function toggleMenu(e, id) { e.stopPropagation(); setBrokerFilter(''); setMenuOpen(prev => prev === id ? null : id); }
 
   // ── School collection detail view ("All Leads" in a collection) ─────
   if (selected) {
@@ -369,7 +371,7 @@ export default function Bookmarks() {
                       onDrop={() => handleColDrop(index)}
                       onDragEnd={() => { dragIndexRef.current = null; setDragId(null); }}
                       onClick={() => { setSelected(col); setSearchParams({ col: col._id }); }}
-                      style={{ cursor: filtering ? 'pointer' : 'grab', opacity: dragId === col._id ? 0.4 : 1 }}
+                      style={{ cursor: filtering ? 'pointer' : 'grab', opacity: dragId === col._id ? 0.4 : 1, zIndex: menuOpen === col._id ? 200 : undefined }}
                       title={filtering ? undefined : 'Drag to reorder'}
                     >
                       <div>
@@ -379,32 +381,56 @@ export default function Bookmarks() {
                       <div draggable={false} style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button aria-label={`Options for ${col.name}`} onClick={e => toggleMenu(e, col._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 6px', color: '#6b7280' }}>⋯</button>
                         {menuOpen === col._id && (
-                          <div style={MENU_STYLE}>
-                            <p style={{ padding: '10px 16px 6px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Share with broker</p>
-                            {brokers.length === 0
-                              ? <span style={{ display: 'block', padding: '0 16px 10px', fontSize: '0.82rem', color: '#9ca3af' }}>No brokers yet</span>
-                              : brokers.map(broker => {
-                                  const shared = (col.sharedWith || []).includes(broker.email);
-                                  return (
-                                    <button
-                                      key={broker._id}
-                                      disabled={sharing === broker.email}
-                                      onClick={() => toggleShareCol(col, broker)}
-                                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 16px', background: shared ? '#f5f3ff' : 'none', border: 'none', cursor: 'pointer', gap: 8, opacity: sharing === broker.email ? 0.6 : 1 }}
-                                    >
-                                      <span style={{ fontSize: '0.85rem', color: '#374151', textAlign: 'left', flex: 1 }}>{broker.name}</span>
-                                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: shared ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>
-                                        {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
-                                      </span>
-                                    </button>
-                                  );
-                                })
-                            }
-                            <div style={{ borderTop: '1px solid #f3f4f6', marginTop: 4 }} />
-                            {col.schools.length === 0
-                              ? <button style={MENU_ITEM} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
-                              : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
-                            }
+                          <div style={SHARE_MENU_STYLE}>
+                            <p style={{ padding: '12px 16px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Share with broker</p>
+                            {brokers.length === 0 ? (
+                              <span style={{ display: 'block', padding: '0 16px 10px', fontSize: '0.82rem', color: '#9ca3af' }}>No brokers yet</span>
+                            ) : (() => {
+                              const f = brokerFilter.trim().toLowerCase();
+                              const shownBrokers = f
+                                ? brokers.filter(b => (b.name || '').toLowerCase().includes(f) || (b.email || '').toLowerCase().includes(f))
+                                : brokers;
+                              return (
+                                <>
+                                  {brokers.length > 6 && (
+                                    <div style={{ padding: '0 12px 8px' }}>
+                                      <input
+                                        aria-label="Search brokers"
+                                        value={brokerFilter}
+                                        onChange={e => setBrokerFilter(e.target.value)}
+                                        placeholder="Search brokers…"
+                                        style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: '0.8rem', outline: 'none' }}
+                                      />
+                                    </div>
+                                  )}
+                                  <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                                    {shownBrokers.map(broker => {
+                                      const shared = (col.sharedWith || []).includes(broker.email);
+                                      return (
+                                        <button
+                                          key={broker._id}
+                                          disabled={sharing === broker.email}
+                                          onClick={() => toggleShareCol(col, broker)}
+                                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 16px', background: shared ? '#f5f3ff' : 'none', border: 'none', cursor: 'pointer', gap: 8, opacity: sharing === broker.email ? 0.6 : 1 }}
+                                        >
+                                          <span style={{ fontSize: '0.85rem', color: '#374151', textAlign: 'left', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{broker.name}</span>
+                                          <span style={{ fontSize: '0.72rem', fontWeight: 600, color: shared ? '#7c3aed' : '#94a3b8', flexShrink: 0 }}>
+                                            {sharing === broker.email ? '…' : shared ? '✓ Shared' : '+ Share'}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                    {shownBrokers.length === 0 && <span style={{ display: 'block', padding: '6px 16px', fontSize: '0.8rem', color: '#9ca3af' }}>No matches.</span>}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                            <div style={{ borderTop: '1px solid #f3f4f6', marginTop: 4 }}>
+                              {col.schools.length === 0
+                                ? <button style={{ ...MENU_ITEM, width: '100%' }} onClick={() => { setMenuOpen(null); deleteCol(col._id, col.name); }}>Delete collection</button>
+                                : <span style={{ display: 'block', padding: '10px 16px', fontSize: '0.82rem', color: '#9ca3af' }}>Remove all schools first</span>
+                              }
+                            </div>
                           </div>
                         )}
                       </div>
