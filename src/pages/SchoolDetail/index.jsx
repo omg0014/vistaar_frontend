@@ -137,6 +137,57 @@ function TeachersSection({ school }) {
   );
 }
 
+function formatCount(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(n);
+}
+
+// Instagram follower-count health: red <3K, orange 3K-5.9K, green 6K+.
+function followerStatusColor(followers) {
+  if (followers == null) return null;
+  if (followers < 3000) return '#dc2626';
+  if (followers < 6000) return '#f97316';
+  return '#16a34a';
+}
+
+const INSTAGRAM_FIELDS = [
+  ['Handle',    'handle'],
+  ['Followers', 'followers'],
+  ['Following', 'following'],
+  ['Posts',     'postsCount'],
+];
+
+// Instagram stats scraped from the school's website/social link. Renders only
+// when school.instagram exists; the handle can be a false match picked up
+// from a template/builder link (e.g. "wix") rather than the school's own
+// account, so it's shown as-is without being treated as verified.
+function InstagramTable({ school }) {
+  const ig = school.instagram;
+  if (!ig || typeof ig !== 'object') return null;
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <tbody>
+          {INSTAGRAM_FIELDS.map(([label, key]) => (
+            <tr key={key} className={styles.row}>
+              <td className={styles.tdLabel}>{label}</td>
+              <td className={styles.tdVal}>
+                {key === 'handle'
+                  ? (ig.handle
+                      ? <a href={`https://www.instagram.com/${ig.handle}/`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>@{ig.handle}</a>
+                      : <span className={styles.empty}>—</span>)
+                  : (ig[key] == null ? <span className={styles.empty}>—</span> : formatCount(ig[key]))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function schoolTypeDisplay(val) {
   if (!val) return { emoji: '—', label: '' };
   const v = String(val).toLowerCase();
@@ -355,10 +406,10 @@ function normalizeUrl(u) {
 
 const linkStyle = { color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' };
 
-// Social media, mandatory-disclosure page, and disclosure PDFs — all read
-// straight from the school document, so anything updated in MongoDB shows here
-// on the next load. Each block renders only when its own data exists; a missing
-// field produces no section and no placeholder.
+// Social media and mandatory-disclosure documents — all read straight from
+// the school document, so anything updated in MongoDB shows here on the next
+// load. Each block renders only when its own data exists; a missing field
+// produces no section and no placeholder.
 function DisclosureSections({ school }) {
   const socialEntries = Object.entries(school._socialLinks || {})
     .filter(([, v]) => typeof v === 'string' && v.trim() !== '');
@@ -377,7 +428,15 @@ function DisclosureSections({ school }) {
     <div className={styles.sectionsGrid}>
       {socialEntries.length > 0 && (
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Social Media</h2>
+          <h2 className={styles.sectionTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            Social Media
+            {(() => {
+              const color = followerStatusColor(school.instagram?.followers);
+              return color && (
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+              );
+            })()}
+          </h2>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <tbody>
@@ -392,33 +451,24 @@ function DisclosureSections({ school }) {
               </tbody>
             </table>
           </div>
+          <InstagramTable school={school} />
         </div>
       )}
 
-      {disclosureUrl && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Mandatory Disclosure</h2>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <tbody>
-                <tr className={styles.row}>
-                  <td className={styles.tdLabel}>Disclosure Page</td>
-                  <td className={styles.tdVal}>
-                    <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {docs.length > 0 && (
+      {(disclosureUrl || docs.length > 0) && (
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Mandatory Disclosure Documents</h2>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <tbody>
+                {disclosureUrl && (
+                  <tr className={styles.row}>
+                    <td className={styles.tdLabel}>Disclosure Page</td>
+                    <td className={styles.tdVal}>
+                      <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
+                    </td>
+                  </tr>
+                )}
                 {docs.map((d, i) => (
                   <tr key={`${d.url}-${i}`} className={styles.row}>
                     <td className={styles.tdLabel}>{`Document ${i + 1}`}</td>
