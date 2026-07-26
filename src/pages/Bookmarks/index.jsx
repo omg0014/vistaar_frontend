@@ -279,7 +279,16 @@ export default function Bookmarks() {
         {menuOpen && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />}
         <div className={styles.leadsList}>
             {detailSchools.length === 0 && (
-              <p className={styles.msg}>{schoolFiltering ? `No schools match “${schoolApplied}”.` : 'No schools in this collection.'}</p>
+              schoolFiltering
+                ? <p className={styles.msg}>No schools match “{schoolApplied}”.</p>
+                : (
+                    <div className={styles.emptyState}>
+                      <div className={styles.emptyIcon}>🏫</div>
+                      <p className={styles.emptyTitle}>No schools in this collection</p>
+                      <p className={styles.emptyDesc}>Search for schools and add them to this collection to get started.</p>
+                      <button className={styles.emptyBtn} onClick={() => navigate('/')}>Search &amp; Add Schools</button>
+                    </div>
+                  )
             )}
             {detailSchools.map((school, index) => (
               <LeadCard
@@ -386,7 +395,14 @@ export default function Bookmarks() {
                 </div>
               ))
             : cols.length === 0
-              ? <p className={styles.msg}>No collections yet. Switch the dropdown to “Create” to add one.</p>
+              ? (
+                  <div className={styles.emptyState}>
+                    <div className={styles.emptyIcon}>📚</div>
+                    <p className={styles.emptyTitle}>No collections yet</p>
+                    <p className={styles.emptyDesc}>Create a collection to start organizing and sharing schools with brokers.</p>
+                    <button className={styles.emptyBtn} onClick={() => navigate('/bookmarks')}>Go to Bookmarks</button>
+                  </div>
+                )
               : visibleCols.length === 0
                 ? <p className={styles.msg}>No collections match “{appliedQuery}”.</p>
                 : visibleCols.map((col, index) => (

@@ -546,6 +546,10 @@
 .menuItem:hover { background: #fef2f2; }
 
 .emptyLeads {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 60px 24px;
 }
@@ -561,6 +565,18 @@
   max-width: 340px;
   margin: 0 auto;
 }
+.emptyLeadsBtn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.emptyLeadsBtn:hover { background: #6d28d9; }
 
 .footer {
   background: linear-gradient(135deg, #1e0a3c 0%, #4c1d95 60%, #7c3aed 100%);

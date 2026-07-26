@@ -205,6 +205,7 @@ export default function AdminPanel() {
               <p className={styles.emptyLeadsDesc}>
                 Go to the Bookmarks page and share a collection with {selectedBroker.name}.
               </p>
+              <button className={styles.emptyLeadsBtn} onClick={() => navigate('/bookmarks')}>Go to Bookmarks</button>
             </div>
           )}
 
