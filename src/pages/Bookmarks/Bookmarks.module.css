@@ -186,6 +186,33 @@
 
 .msg { grid-column: 1 / -1; color: #9ca3af; font-size: 0.9rem; text-align: center; padding: 40px 0; }
 
+/* Centered empty state with a call-to-action button */
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 64px 20px;
+}
+.emptyIcon { font-size: 2.5rem; line-height: 1; }
+.emptyTitle { color: #374151; font-size: 1.05rem; font-weight: 600; margin: 0; }
+.emptyDesc { color: #9ca3af; font-size: 0.9rem; margin: 0; max-width: 360px; }
+.emptyBtn {
+  padding: 10px 20px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.emptyBtn:hover { background: #6d28d9; }
+
 /* Tabs */
 .tabs {
   display: flex;
