@@ -406,11 +406,80 @@ function normalizeUrl(u) {
 
 const linkStyle = { color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' };
 
+// The Mandatory Disclosure link cell — inline view / edit / save, plus (when
+// the link is missing but a website exists) a Request button that raises a
+// disclosure-link request shown in the Notifications panel. Request status is
+// mirrored from the `disclosure_requests` record so the lead and the panel
+// always agree.
+function DisclosureLinkCell({ id, disclosureUrl, canEdit, apiFetch, setSchool, request, onRequestChange }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(disclosureUrl || '');
+  const [saving, setSaving] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const r = await apiFetch(`${API_BASE}/api/schools/school/${id}/disclosure-url`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disclosureUrl: val }),
+      }).then(res => res.json());
+      const saved = r.disclosureUrl ?? val;
+      setSchool(prev => ({ ...prev, _mandatoryDisclosureUrl: saved }));
+      setEditing(false);
+      // Saving a link resolves any pending request (backend does this too).
+      if (saved && request && request.status === 'pending') {
+        onRequestChange({ ...request, status: 'resolved' });
+      }
+    } catch {}
+    setSaving(false);
+  }
+
+  async function requestLink() {
+    setRequesting(true);
+    try {
+      const r = await apiFetch(`${API_BASE}/api/schools/school/${id}/disclosure-request`, {
+        method: 'POST',
+      }).then(res => res.json());
+      if (r.request) onRequestChange(r.request);
+    } catch {}
+    setRequesting(false);
+  }
+
+  if (editing) {
+    return (
+      <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <input autoFocus value={val} onChange={e => setVal(e.target.value)} placeholder="https://…" style={{ flex: 1, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', outline: 'none' }} />
+        <button onClick={save} disabled={saving} style={{ padding: '4px 10px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, opacity: saving ? 0.6 : 1 }}>{saving ? '…' : 'Save'}</button>
+        <button onClick={() => { setVal(disclosureUrl || ''); setEditing(false); }} style={{ padding: '4px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}>Cancel</button>
+      </span>
+    );
+  }
+
+  const pending = request && request.status === 'pending';
+  return (
+    <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {disclosureUrl
+        ? <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
+        : <span className={styles.empty}>—</span>}
+      {canEdit && (
+        <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 600, padding: 0, flexShrink: 0 }}>✏️ Edit</button>
+      )}
+      {canEdit && !disclosureUrl && (
+        pending
+          ? <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 6, padding: '2px 8px' }}>Requested</span>
+          : <button onClick={requestLink} disabled={requesting} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', cursor: 'pointer', color: '#2563eb', fontSize: '0.72rem', fontWeight: 600, borderRadius: 6, padding: '2px 8px', opacity: requesting ? 0.6 : 1 }}>{requesting ? '…' : 'Request'}</button>
+      )}
+    </span>
+  );
+}
+
 // Social media and mandatory-disclosure documents — all read straight from
 // the school document, so anything updated in MongoDB shows here on the next
-// load. Each block renders only when its own data exists; a missing field
-// produces no section and no placeholder.
-function DisclosureSections({ school }) {
+// load. Admins additionally get Edit/Save on the disclosure link and, when a
+// website exists but the link is missing, a Request button.
+function DisclosureSections({ school, id, canEdit, apiFetch, setSchool }) {
   const socialEntries = Object.entries(school._socialLinks || {})
     .filter(([, v]) => typeof v === 'string' && v.trim() !== '');
 
@@ -418,11 +487,34 @@ function DisclosureSections({ school }) {
     ? school._mandatoryDisclosureUrl.trim()
     : null;
 
+  const hasWebsite = typeof school.website === 'string' && school.website.trim() !== '';
+
   const docs = Array.isArray(school._mandatoryDisclosureDocs)
     ? school._mandatoryDisclosureDocs.filter(d => d && typeof d.url === 'string' && d.url.trim() !== '')
     : [];
 
-  if (socialEntries.length === 0 && !disclosureUrl && docs.length === 0) return null;
+  // Current disclosure-request record for this school (for the pending/resolved
+  // badge and Request button). Only admins can see/manage requests.
+  const [request, setRequest] = useState(null);
+  useEffect(() => {
+    if (!canEdit) return;
+    let cancelled = false;
+    apiFetch(`${API_BASE}/api/schools/disclosure-requests/list`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        const mine = (d.requests || []).find(req => req.schoolId === id) || null;
+        setRequest(mine);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [id, canEdit, apiFetch]);
+
+  // The disclosure block shows whenever there's disclosure data, or when an
+  // admin could act on it (website present so a link can be added/requested).
+  const showDisclosure = disclosureUrl || docs.length > 0 || (canEdit && hasWebsite);
+
+  if (socialEntries.length === 0 && !showDisclosure) return null;
 
   return (
     <div className={styles.sectionsGrid}>
@@ -455,20 +547,22 @@ function DisclosureSections({ school }) {
         </div>
       )}
 
-      {(disclosureUrl || docs.length > 0) && (
+      {showDisclosure && (
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Mandatory Disclosure Documents</h2>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <tbody>
-                {disclosureUrl && (
-                  <tr className={styles.row}>
-                    <td className={styles.tdLabel}>Disclosure Page</td>
-                    <td className={styles.tdVal}>
-                      <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
-                    </td>
-                  </tr>
-                )}
+                <tr className={styles.row}>
+                  <td className={styles.tdLabel}>Disclosure Page</td>
+                  <td className={styles.tdVal}>
+                    {canEdit
+                      ? <DisclosureLinkCell id={id} disclosureUrl={disclosureUrl} canEdit={canEdit} apiFetch={apiFetch} setSchool={setSchool} request={request} onRequestChange={setRequest} />
+                      : (disclosureUrl
+                          ? <a href={normalizeUrl(disclosureUrl)} target="_blank" rel="noreferrer" style={linkStyle}>{disclosureUrl}</a>
+                          : <span className={styles.empty}>—</span>)}
+                  </td>
+                </tr>
                 {docs.map((d, i) => (
                   <tr key={`${d.url}-${i}`} className={styles.row}>
                     <td className={styles.tdLabel}>{`Document ${i + 1}`}</td>
@@ -710,7 +804,7 @@ export default function SchoolDetail({ publicMode = false }) {
             ))}
           </div>
 
-          {!publicMode && <DisclosureSections school={school} />}
+          {!publicMode && <DisclosureSections school={school} id={id} canEdit={canEdit} apiFetch={apiFetch} setSchool={setSchool} />}
         </div>
       )}
     </div>
