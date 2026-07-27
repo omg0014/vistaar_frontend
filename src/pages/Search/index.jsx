@@ -4,7 +4,7 @@ import { SEARCH_TYPES } from '../../constants/searchTypes';
 import { API_BASE } from '../../constants/api';
 import useAuthFetch from '../../hooks/useAuthFetch';
 import useScrollReveal from '../../hooks/useScrollReveal';
-import { useAuth } from '../../context/AuthContext';
+import HeaderMenu from '../../components/HeaderMenu';
 import styles from './Search.module.css';
 import { calcEfficiency, efficiencyColor } from '../../utils/efficiency';
 
@@ -34,7 +34,6 @@ export default function Search() {
   const location   = useLocation();
   const apiFetch   = useAuthFetch();
   const reveal     = useScrollReveal();
-  const { user, logout } = useAuth();
   const [type, setType]             = useState('schoolName');
   const [q, setQ]                   = useState('');
   const [tags, setTags]             = useState([]); // City/State: multiple OR'd entities
@@ -44,18 +43,6 @@ export default function Search() {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const isFirstLeadsLoad              = useRef(true);
-
-  // Hamburger menu
-  const [hamburgerOpen, setHamburgerOpen] = useState(false);
-  const hamburgerRef                      = useRef(null);
-  useEffect(() => {
-    if (!hamburgerOpen) return;
-    function handleOutside(e) {
-      if (hamburgerRef.current && !hamburgerRef.current.contains(e.target)) setHamburgerOpen(false);
-    }
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [hamburgerOpen]);
 
   const currentLabel = SEARCH_TYPES.find(t => t.value === type)?.label;
 
@@ -138,22 +125,8 @@ export default function Search() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.topRight} ref={hamburgerRef}>
-        {user?.picture && <img src={user.picture} alt={user.name} className={styles.topAvatar} />}
-        <button className={styles.hamburgerBtn} onClick={() => setHamburgerOpen(o => !o)} aria-label="Menu">
-          <span /><span /><span />
-        </button>
-        {hamburgerOpen && (
-          <div className={styles.hamburgerMenu}>
-            <p className={styles.hamburgerName}>{user?.name}</p>
-            <button onClick={() => { setHamburgerOpen(false); navigate('/bookmarks'); }} className={styles.hamburgerItem}>Bookmarks</button>
-            <button onClick={() => { setHamburgerOpen(false); navigate('/saved-searches'); }} className={styles.hamburgerItem}>Saved Searches</button>
-            {user?.role === 'admin' && (
-              <button onClick={() => { setHamburgerOpen(false); navigate('/admin'); }} className={styles.hamburgerItem}>Brokers</button>
-            )}
-            <button onClick={() => { if (window.confirm('Log out of Vistaar?')) { logout(); navigate('/login'); } }} className={styles.hamburgerItem}>Logout</button>
-          </div>
-        )}
+      <div className={styles.topRight}>
+        <HeaderMenu />
       </div>
       <div
         className={styles.hero}
